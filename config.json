@@ -1,0 +1,227 @@
+{
+    "name": "The famous FIPS-O-MATIC",
+
+    "namespace": "Yale\\Yes3Fips",
+
+    "description": "The Fabulous FIPS-O-MATIC",
+
+    "prefix": "yes3_fips",
+
+    "authors": [
+        {
+            "name": "Peter Charpentier",
+            "email": "redcap@yale.edu",
+            "role": "developer",
+            "institution": "Yale University"
+        }
+    ],
+
+    "permissions": [
+        "redcap_module_link_check_display",
+        "redcap_module_ajax"
+    ],
+
+    "project-settings": [
+        {
+            "key": "data-source",
+            "name": "Data source",
+            "required": true,
+            "type": "radio",
+            "choices": [
+                {"value": "redcap", "name":"This REDCap project"},
+                {"value": "database", "name":"FOM database"}
+            ]
+        },
+        {
+            "key": "fips-event",
+            "name": "Event for FIPS form",
+            "type": "event-list",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "redcap"
+            }
+        },
+        {
+            "key": "selection-field-name", 
+            "name": "Selection field name",
+            "type": "field-list",
+            "branchingLogic": {                   
+                "field": "data-source",
+                "value": "redcap"                   
+            }
+        },         
+        {
+            "key": "address-field-type",
+            "name": "Address is",
+            "type": "radio",
+            "choices": [
+                {"value": "single", "name":"A single notes field"},
+                {"value": "multiple", "name":"Discrete fields for street, city, state, zip"}
+            ],
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "redcap"
+            }
+        },
+        {
+            "key": "address-field-name", 
+            "name": "Address field name",
+            "type": "field-list",
+            "branchingLogic": {
+                "type": "and",
+                "conditions": [
+                    {
+                        "field": "data-source",
+                        "value": "redcap"
+                    },
+                    {
+                        "field": "address-field-type",
+                        "value": "single"
+                    }
+                ]
+            }
+        },
+        {
+            "key": "street-1-field-name", 
+            "name": "Street field name",
+            "type": "field-list",
+            "branchingLogic": {
+                "type": "and",
+                "conditions": [
+                    {
+                        "field": "data-source",
+                        "value": "redcap"
+                    },
+                    {
+                        "field": "address-field-type",
+                        "value": "multiple"
+                    }
+                ]
+            }
+        },
+        {
+            "key": "street-2-field-name", 
+            "name": "Optional second street field name",
+            "type": "field-list",
+            "branchingLogic": {
+                "type": "and",
+                "conditions": [
+                    {
+                        "field": "data-source",
+                        "value": "redcap"
+                    },
+                    {
+                        "field": "address-field-type",
+                        "value": "multiple"
+                    }
+                ]
+            }
+        },
+        {
+            "key": "city-field-name", 
+            "name": "City field name",
+            "type": "field-list",
+            "branchingLogic": {
+                "type": "and",
+                "conditions": [
+                    {
+                        "field": "data-source",
+                        "value": "redcap"
+                    },
+                    {
+                        "field": "address-field-type",
+                        "value": "multiple"
+                    }
+                ]
+            }
+        },
+        {
+            "key": "state-field-name", 
+            "name": "State field name",
+            "type": "field-list",
+            "branchingLogic": {
+                "type": "and",
+                "conditions": [
+                    {
+                        "field": "data-source",
+                        "value": "redcap"
+                    },
+                    {
+                        "field": "address-field-type",
+                        "value": "multiple"
+                    }
+                ]
+            }
+        },
+        {
+            "key": "zip-field-name", 
+            "name": "ZIP code field name",
+            "type": "field-list",
+            "branchingLogic": {
+                "type": "and",
+                "conditions": [
+                    {
+                        "field": "data-source",
+                        "value": "redcap"
+                    },
+                    {
+                        "field": "address-field-type",
+                        "value": "multiple"
+                    }
+                ]
+            }
+        },
+        {
+            "key": "api-batch-size",
+            "name": "batch size for API calls",
+            "type": "text"
+        },
+        {
+            "key": "database-header",
+            "name": "-- sorry, database access not supported yet --",
+            "type": "descriptive",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "database"
+            }
+        }
+    ],
+
+    "links": {
+        "project": [
+            {
+                "name": "FOM: import addresses",
+                "icon": "fas fa-gear",
+                "url":  "pages/update_addresses.php",
+                "show-header-and-footer": true
+            },
+            {
+                "name": "The Fabulous FIPS-O-Matic",
+                "icon": "fas fa-bomb",
+                "url":  "pages/fips_o_matic.php",
+                "show-header-and-footer": true
+            }
+        ]
+    },
+
+    "auth-ajax-actions":[
+        "get-fips-records",
+        "save-fips-record",
+        "clear-api-batch",
+        "update-api-batch",
+        "call-api",
+        "get-summary",
+        "get-api-batch-size",
+        "set-api-batch-size"
+    ],
+
+    "no-auth-pages": [
+    ],
+
+    "compatibility": {
+        "php-version-min": "7.4",
+        "redcap-version-min": "12.0.4"
+    },
+
+    "framework-version": 9
+}

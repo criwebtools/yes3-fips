@@ -1,0 +1,203 @@
+input#fips-record, .fips-hidden {
+
+    display: none;
+}
+
+.fips-changed {
+
+    color: var(--y3-secondary) !important;
+    border-color: var(--y3-secondary) !important;
+}
+
+tr.fips-changed td{
+
+    color: var(--y3-secondary) !important;
+    font-style: italic;
+}
+
+.fips-dangerbutton {
+
+    background-color: var(--y3-danger) !important;
+    border-color: var(--y3-danger) !important;
+}
+
+.fips-warningbutton {
+
+    background-color: var(--y3-warning) !important;
+    border-color: var(--y3-warning) !important;
+}
+
+.fips-subtlebutton {
+
+    background-color: var(--y3-subtle) !important;
+    border-color: var(--y3-subtle) !important;
+}
+
+.fips-savebutton {
+
+    background-color: var(--y3-positive) !important;
+    border-color: var(--y3-positive) !important;
+}
+
+table#fips-summary-table td {
+
+    padding-left: 0;
+    padding-right: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+#fips-refresh {
+
+    display: none;
+}
+
+div#fips-editor-container {
+
+    width: 100%;
+    border: 1px solid var(--y3-secondary);
+    padding: 10px;
+    /*margin-top: 10px;*/
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 600px;
+    /* display: none; */
+}
+
+div#fips-list-container {
+
+    width: 100%;
+    border: 1px solid var(--y3-subtle);
+    padding: 0;
+    margin-top: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* display: none; */
+}
+
+div#fips-list-container .tableFixHead {
+    overflow-y: auto; /* make the table scrollable if height is more than 200 px  */
+    height: 200px; /* gives an initial height of 200px to the table */
+}
+
+div#fips-list-container .tableFixHead thead th {
+    position: sticky; /* make the table heads sticky */
+    top: 0px; /* table head will be placed from the top of the table and sticks to it */
+}
+
+div#fips-list-container table {
+    border-collapse: collapse; /* make the table borders collapse to each other */
+    width: 100%;
+}
+
+div#fips-list-container td {
+    padding-left: 10px;
+    padding-right: 0;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--y3-subtle);
+    color: var(--y3-primary);
+    background-color: var(--y3-background-color);
+}
+
+div#fips-list-container th {
+    padding-left: 10px;
+    padding-right: 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    color: var(--y3-background-color);
+    background-color: var(--y3-subtle);
+}
+
+div#yes3-container a {
+
+    color: var(--y3-secondary) !important;
+    font-size: var(--y3-font-size) !important;
+    font-weight: normal !important;
+}
+
+div#yes3-container a:hover {
+    color: var(--y3-accent) !important;
+    cursor: pointer;
+    text-decoration: underline !important;
+    outline: none !important;
+}
+
+table#fips-editor-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+div#fips-editor input[type=button]:focus {
+
+    outline: auto !important;
+}
+
+input#fips-api-batch-size {
+
+    width: 5em;
+}
+
+/*
+tbody#fips-editor-tbody td {
+    vertical-align: top;
+}
+*/
+tbody#fips-editor-tbody td.fips-editor-label {
+    width: 175px;
+}
+/*
+tbody#fips-editor-tbody tr td::nth-child(2) {
+    width: 67%;
+}
+*/
+tbody#fips-editor-tbody tr:not(.fips-textarea) td {
+    
+    padding-bottom: 5px;
+}
+
+tbody#fips-editor-tbody textarea {
+
+    width: 100% !important;
+    resize: vertical;
+    height: 4em;
+    background-color: var(--y3-background-color);
+}
+
+.fips-disabled {
+
+    background-color: transparent !important;
+    border-color: transparent !important;
+    color: var(--y3-secondary) !important;
+}
+
+#fips-editor-message{
+
+    color: var(--y3-warning);
+    font-weight: 700;
+}
+
+table#fips-summary-table > tbody > tr > td:first-child {
+
+    float: left;
+    color: var(--y3-primary);
+    font-weight: normal;
+}
+
+table#fips-summary-table > tbody > tr > td:nth-child(2) {
+
+    float: right;
+    color: var(--y3-primary);
+    font-weight: normal;
+}
+
+table#fips-summary-table > tbody > tr > td:nth-child(3) {
+
+    color: var(--y3-subtle);
+    font-weight: normal;
+}
+
+table#fips-summary-table th {
+
+    padding-bottom: 15px !important;
+}

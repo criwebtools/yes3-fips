@@ -1,0 +1,50 @@
+<div id="fips-editor" class="yes3-panel yes3-panel-medium yes3-draggable" style="display:none">
+
+   <div class="yes3-panel-header-row yes3-legroom" id="fips-editor-header">
+
+      <div class="yes3-panel-row-left">
+            FIPS Editor
+      </div>
+
+      <div class="yes3-panel-row-left yes3-bold" id="fips-record"></div>
+
+      <div class="yes3-panel-row-right">
+
+         <a href="javascript: FIPS.closeEditor(0)"><i class="fas fa-times fa-2x"></i></a>
+         
+      </div>
+
+   </div>  
+
+   <div class="yes3-panel-row" id="fips-editor-container">
+       <table class="fips-editor" id="fips-editor-table">   
+         <tbody id="fips-editor-tbody"></tbody>      
+       </table>
+   </div>
+
+   <div class="yes3-panel-row yes3-legroom" id="fips-editor-footer">
+
+      <div class="yes3-flex-container-right-aligned">
+ 
+            <div class="yes3-flex-vcenter-hright">
+
+                  <div class="yes3-flex-vcenter-hleft">
+                        <input type="button" class="yes3-panel-button yes3-button-caption-save yes3-save-button fips-savebutton" onclick="FIPS.saveEditorRecord()" />
+                  </div>
+                                  
+                  <div class="yes3-flex-vcenter-hleft">
+                        <input type='button' class='fips-dangerbutton fips-apibutton' value='call API' onclick="FIPS.callApiFromEditor()" />
+                  </div>
+
+                  <div class="yes3-flex-vcenter-hleft">
+                        <input type="button" class="yes3-panel-button yes3-button-caption-close fips-warningbutton" onclick="FIPS.closeEditor(0)" />
+                  </div>
+            </div>
+
+            <div class="yes3-flex-vcenter-hright">
+                  <div class="yes3-flex-vcenter-hleft" id="fips-editor-message"></div>
+            </div>
+
+      </div>
+   </div>   
+</div>
