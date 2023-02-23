@@ -236,11 +236,12 @@ FIPS.populateTheEditor = function(response){
     }
 
     $tbody.find('input, select, textarea')
-        .off('change')
-        .on('change', function(){
-
-            $(this).addClass('fips-changed');
-            FIPS.showEditorSaveButton();
+        //.off('keypress')
+        .on('input propertychange paste', function(){
+            if ( !$(this).hasClass('fips-changed') ){
+                $(this).addClass('fips-changed');
+                FIPS.showEditorSaveButton();
+            }
         })
     ;
 
@@ -538,6 +539,8 @@ FIPS.callApiFromEditorConfirmation = function(response){
 }
 
 FIPS.callAPI = function(){
+
+    FIPS.postMessage( 'WAIT' );
 
     YES3.ajax(
         'call-api',
