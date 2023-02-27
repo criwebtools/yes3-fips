@@ -5,6 +5,8 @@ $module = new Yale\Yes3Fips\Yes3Fips();
 
 $module->getCodeFor('fips_o_matic', true);
 
+$copy = $module->getCopyright();
+
 ?>
 
 <div class='container' id='yes3-container'>
@@ -36,7 +38,7 @@ $module->getCodeFor('fips_o_matic', true);
                 <div class="yes3-flex-vcenter-hleft">
                     <select id="fips-filter">
                         <option value="" disabled selected>-- select a filter --</option>
-                        <option value="pending">open</option>
+                        <option value="pending">pending</option>
                         <option value="nextbatch">next API batch</option>
                         <option value="inprocess">in process</option>
                         <option value="closed">closed</option>
@@ -63,7 +65,7 @@ $module->getCodeFor('fips_o_matic', true);
                     <thead>
                         <th class='fips-record'>record</th>
                         <th class='fips-match-status'>status</th>
-                        <th class='fips-match-result'>match</th>
+                        <th class='fips-match-result fips-disposable'>match</th>
                         <th class='fips-match-type'>type</th>
                         <th class='fips-match-edit'>edit</th>
                     </thead>
@@ -131,6 +133,14 @@ $module->getCodeFor('fips_o_matic', true);
 
         </div>
 
+
+    </div>
+
+    <div class='row yes3-headroom'>
+
+        <div class='col-lg-12 yes3-copyright' id='fips-copyright'>
+            <?= $copy ?>
+        </div>
 
     </div>
 

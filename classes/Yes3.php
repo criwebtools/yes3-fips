@@ -249,6 +249,14 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
       return self::fetchValue($sql, [$project_id, $event_id, $record, $event_id, $instance]);
    }
 
+    // a slight variation...
+    public static function getREDcapDatum($project_id, $event_id, $record, $field_name, $instance=1){
+
+        $sql = "SELECT `value` FROM redcap_data WHERE project_id=? AND event_id=? AND record=? AND field_name=? AND IFNULL(instance, 1)=?";
+
+        return Yes3::fetchValue($sql, [$project_id, $event_id, $record, $field_name, $instance]);
+    }
+
    /**
     * A more friendly record retrieval
     * 
@@ -475,7 +483,7 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
      * 
      * @return string
      */
-    public static function inoffensiveText( $s, $maxLen=0 ):string
+    public static function inoffensiveText( $s, $maxLen=0, $convertNewLineToComma=false ):string
     {
         if ( is_null($s) ){
 
@@ -485,6 +493,11 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
         if ( !strlen($s) ){
 
             return "";
+        }
+
+        if ( $convertNewLineToComma ){
+
+            $s = str_replace("\n", ", ", $s);
         }
         
         $s = preg_replace('/[\x00-\x1F\x7F]/u', ' ', self::straightQuoter( strip_tags($s)) ); 
@@ -514,6 +527,8 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
 
             return "";
         }
+
+        $s = str_replace(["\n", "\r", "\t"], [", ", "", " "], $s);
         
         return preg_replace("/[^a-zA-Z0-9_ ]+/", "", $s);
     }
@@ -540,8 +555,6 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
 
             return "";
         }
-
-        $s = preg_replace('/[\x00-\x1F\x7F]/u', '', strip_tags($s));
  
         if ( $maxLen ) return self::truncate($s, $maxLen);
 

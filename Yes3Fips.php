@@ -6,20 +6,17 @@ ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 
-define('MATCH_STATUS_PENDING', '0');
-define('MATCH_STATUS_NEXT_API_BATCH', '1');
-define('MATCH_STATUS_IN_PROCESS', '2');
-define('MATCH_STATUS_CLOSED', '3');
-define('DEFAULT_API_BATCH_SIZE', '50');
-
 require "autoload.php";
 
 use Exception;
-use PHPSQLParser\builders\TruncateBuilder;
 use REDCap;
+use stdClass;
+
+use Yale\Yes3Fips\Yes3;
 
 use Yale\Yes3Fips\FIPS;
-use Yale\Yes3Fips\Yes3;
+use Yale\Yes3Fips\FIO;
+use Yale\Yes3Fips\FIOREDCap;
 
 class Yes3Fips extends \ExternalModules\AbstractExternalModule
 {
@@ -27,7 +24,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
     public $fips_form = [
         'form_name' => 'fips',
         "fips_linkage_id" => "fips_linkage_id",
-        "fips_address_original" => "fips_address_original",
+        "fips_address" => "fips_address",
         "fips_address_street" => "fips_address_street",
         "fips_address_city" => "fips_address_city",
         "fips_address_state" => "fips_address_state",
@@ -50,43 +47,57 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
     public $fips_editor_fields = [
 
-        [ "field_name"=>"fips_address_original",  "type"=>"textarea", "label"=>"Imported address",    "editable"=>0, "size"=>100 ],
-
-        [ "field_name"=>"fips_match_status",      "type"=>"select",   "label"=>"status",              "editable"=>1, "size"=>50, 
+        [ "field_name"=>"fips_match_status", "type"=>"select", "label"=>"status", "editable"=>FIO::ALWAYS, "size"=>50, 
             "choices"=>[
-                ["value"=>MATCH_STATUS_PENDING, "label"=>"Pending"],
-                ["value"=>MATCH_STATUS_NEXT_API_BATCH, "label"=>"Next API batch"],
-                ["value"=>MATCH_STATUS_IN_PROCESS, "label"=>"In process"],
-                ["value"=>MATCH_STATUS_CLOSED, "label"=>"Closed"]
+                ["value"=>FIO::MATCH_STATUS_PENDING, "label"=>"Pending"],
+                ["value"=>FIO::MATCH_STATUS_NEXT_API_BATCH, "label"=>"Next API batch"],
+                ["value"=>FIO::MATCH_STATUS_IN_PROCESS, "label"=>"In process"],
+                ["value"=>FIO::MATCH_STATUS_CLOSED, "label"=>"Closed"]
             ]
         ],
 
-        [ "field_name"=>"fips_address_street",    "type"=>"textarea", "label"=>"Street",              "editable"=>1, "size"=>100 ],
-        [ "field_name"=>"fips_address_city",      "type"=>"text",     "label"=>"City",                "editable"=>1, "size"=>100 ],
-        [ "field_name"=>"fips_address_state",     "type"=>"text",     "label"=>"State",               "editable"=>1, "size"=>50 ],
-        [ "field_name"=>"fips_address_zip",       "type"=>"text",     "label"=>"Zip",                 "editable"=>1, "size"=>50 ],
+        [ "field_name"=>"fips_address",  "type"=>"textarea", "label"=>"address", "editable"=>FIO::IF_SINGLE_ADDRESS_FIELD, "size"=>100 ],
+
+        [ "field_name"=>"fips_address_street","type"=>"textarea", "label"=>"Street", "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "size"=>100 ],
+        [ "field_name"=>"fips_address_city",  "type"=>"text", "label"=>"City",   "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "size"=>100 ],
+        [ "field_name"=>"fips_address_state", "type"=>"text", "label"=>"State",  "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "size"=>50 ],
+        [ "field_name"=>"fips_address_zip",   "type"=>"text", "label"=>"Zip",    "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "size"=>50 ],
     
-        [ "field_name"=>"fips_comment",           "type"=>"textarea", "label"=>"comment",             "editable"=>1, "size"=>100 ],
+        [ "field_name"=>"fips_comment",       "type"=>"textarea", "label"=>"comment",  "editable"=>FIO::ALWAYS, "size"=>100 ],
 
-        [ "field_name"=>"fips_state",             "type"=>"text",     "label"=>"FIPS state code",     "editable"=>1, "size"=>50 ],
-        [ "field_name"=>"fips_county",            "type"=>"text",     "label"=>"FIPS county code",    "editable"=>1, "size"=>50 ],
-        [ "field_name"=>"fips_tract",             "type"=>"text",     "label"=>"FIPS tract code",     "editable"=>1, "size"=>50 ],
-        [ "field_name"=>"fips_block",             "type"=>"text",     "label"=>"FIPS block code",     "editable"=>1, "size"=>50 ],
-        [ "field_name"=>"fips_code",              "type"=>"text",     "label"=>"15-digit FIPS code",      "editable"=>1, "size"=>50 ],
-        [ "field_name"=>"fips_census_block_group","type"=>"text",     "label"=>"12-digit Census block group",      "editable"=>1, "size"=>50 ],
+        [ "field_name"=>"fips_state",  "type"=>"text", "label"=>"FIPS state code",     "editable"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_county", "type"=>"text", "label"=>"FIPS county code",    "editable"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_tract",  "type"=>"text", "label"=>"FIPS tract code",     "editable"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_block",  "type"=>"text", "label"=>"FIPS block code",     "editable"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_code",   "type"=>"text", "label"=>"15-digit FIPS code",  "editable"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_census_block_group","type"=>"text",     "label"=>"12-digit Census block group",      "editable"=>FIO::ALWAYS, "size"=>50 ],
 
-        [ "field_name"=>"fips_match_result", "type"=>"text", "label"=>"Match result", "editable"=>0, "size"=>50 ],
-        [ "field_name"=>"fips_match_type", "type"=>"text", "label"=>"Match type", "editable"=>0, "size"=>50 ],
+        [ "field_name"=>"fips_match_result", "type"=>"text", "label"=>"Match result", "editable"=>FIO::NEVER, "size"=>50 ],
+        [ "field_name"=>"fips_match_type", "type"=>"text", "label"=>"Match type", "editable"=>FIO::NEVER, "size"=>50 ],
 
-        [ "field_name"=>"fips_address_submitted", "type"=>"textarea", "label"=>"Address submitted for match", "editable"=>0, "size"=>100 ],
-        [ "field_name"=>"fips_address_matched", "type"=>"textarea", "label"=>"Matched address", "editable"=>0, "size"=>100 ],
+        [ "field_name"=>"fips_address_submitted", "type"=>"textarea", "label"=>"Address submitted for match", "editable"=>FIO::NEVER, "size"=>100 ],
+        [ "field_name"=>"fips_address_matched", "type"=>"textarea", "label"=>"Matched address", "editable"=>FIO::NEVER, "size"=>100 ],
 
-        [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>0, "size"=>100 ],
-        [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>0, "size"=>100 ],
-        [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>0, "size"=>50 ],
-        [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>0, "size"=>50 ],
+        [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::NEVER, "size"=>100 ],
+        [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::NEVER, "size"=>100 ],
+        [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>FIO::NEVER, "size"=>50 ],
+        [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "size"=>50 ],
         
     ];
+
+    public $settings = [
+        'address_field_type' => ""
+    ];
+
+    function __construct()
+    {
+        parent::__construct();
+
+        if ( $this->getProjectId() ){
+
+            $this->settings['address_field_type'] = $this->getProjectSetting('address-field-type');
+        }
+    }
 
     function hiMom(){
         print "Hi Mom";
@@ -97,153 +108,34 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         return $link; // display all links to all project staff
     }
 
-    function getUniqueLinkageIdREDCap(){
+    function redcap_save_record ( 
+        $project_id, 
+        $record,
+        $instrument, 
+        $event_id, 
+        $group_id = NULL, 
+        $survey_hash = NULL, 
+        $response_id = NULL, 
+        $repeat_instance = 1 
+    ){
+        if ( $instrument==="fips" ){
 
-        $fips_event         = $this->getProjectSetting('fips-event');
-        $project_id         = $this->getProjectId();
+            $match_status = Yes3::getREDCapDatum($project_id, $event_id, $record, 'fips_match_status', $repeat_instance);
 
-        $linkage_id = 0;
-        $n = 0;
-        while ( $linkage_id===0 && $n<1000 ){
-
-            $n++;
-
-            $linkage_id = mt_rand(1, 1000000);
-
-            $sql = "SELECT `record` FROM redcap_data WHERE `project_id`=? AND `event_id`=? AND `field_name`='fips_linkage_id' AND `value`=? LIMIT 1";
-            $params = [ $project_id, $fips_event, $linkage_id ];
-
-            if ( Yes3::fetchValue($sql, $params) ){
-
-                $linkage_id = 0;
-            }
-        }
-
-        return $linkage_id;
-    }
-
-    function importAddressesToFipsForm() {
-
-        $selection_field    = $this->getProjectSetting('selection-field-name');
-        $address_field      = $this->getProjectSetting('address-field-name');
-        $street_1_field     = $this->getProjectSetting('street-1-field-name');
-        $street_2_field     = $this->getProjectSetting('street-2-field-name');
-        $city_field         = $this->getProjectSetting('city-field-name');
-        $state_field        = $this->getProjectSetting('state-field-name');
-        $zip_field          = $this->getProjectSetting('zip-field-name');
-
-        $fips_event         = $this->getProjectSetting('fips-event');
-        $project_id         = $this->getProjectId();
-
-        $batch_timestamp = strftime('%F %T');
-
-        $sql = "
-        SELECT a.`record`, a.`value` AS `fips_address`, k.`value` AS `fips_linkage_id`
-        FROM redcap_data a 
-        INNER JOIN redcap_data s ON s.project_id=a.project_id AND s.`record`=a.`record` AND s.field_name=?
-        LEFT JOIN redcap_data f ON f.project_id=a.project_id AND f.`record`=a.`record` AND f.field_name=?
-        LEFT JOIN redcap_data k ON k.project_id=a.project_id AND k.`record`=a.`record` AND k.field_name=?
-        WHERE a.project_id=?
-          AND a.field_name=?
-          AND s.`value`='1'
-          AND IFNULL(f.`value`, 0) < ?
-        ORDER BY a.`record`
-        ";
-
-        $params = [
-            $selection_field, 
-            $this->fips_form['fips_match_status'],
-            $this->fips_form['fips_linkage_id'],
-            $this->getProjectId(), 
-            $address_field,
-            MATCH_STATUS_IN_PROCESS
-        ];
-
-        $N = 0;
-        $Nu = 0;
-
-        foreach(Yes3::recordGenerator($sql, $params) as $x){
-      
-            $street = "";
-            $state = "";
-            $city = "";
-            $zip = "";
-
-            $record = $x['record'];
-
-            $fips_linkage_id = $x['fips_linkage_id'];
-
-            if ( !$fips_linkage_id ){
-
-                $fips_linkage_id = $this->getUniqueLinkageIdREDCap();
-            }
-
-            $this->singleAddressFieldParser($x['fips_address'], $street, $city, $state, $zip);
-
-            $addressData = [
-
-                $this->fips_form['fips_linkage_id'] => $fips_linkage_id,
-                $this->fips_form['fips_address_original'] => $x['fips_address'],
-                $this->fips_form['fips_address_street'] => $street,
-                $this->fips_form['fips_address_city'] => $city,
-                $this->fips_form['fips_address_state'] => $state,
-                $this->fips_form['fips_address_zip'] => $zip
-            ];
-
-            $y = [
-                $record => [
-
-                    $fips_event => $addressData
+            REDCap::saveData(
+                $project_id,
+                'array',
+                [
+                    $record => [
+                        $event_id => [
+                            'fips_save_user' => $this->getUser()->getUsername(),
+                            'fips_save_timestamp' => Yes3::isoTimeStampString(),
+                            'fips_complete' => ( $match_status && $match_status===FIO::MATCH_STATUS_CLOSED ) ? FIO::FORM_COMPLETE : FIO::FORM_INCOMPLETE            
+                        ]
+                    ]
                 ]
-            ];
-
-            $rc = REDCap::saveData(
-                $project_id,
-                'array',
-                $y
             );
-
-            $N++;
-
-            $z = [];
-            
-            if ( $rc['item_count'] ) {
-
-                $Nu++;
-
-                $z = [
-                    $record => [
-    
-                        $fips_event => [
-                            $this->fips_form['fips_address_timestamp'] => $batch_timestamp,
-                            $this->fips_form['fips_address_updated'] => '1'
-                        ]
-                    ]
-                ];
-            } else {
-
-                $z = [
-                    $record => [
-    
-                        $fips_event => [
-                            $this->fips_form['fips_address_updated'] => '0'
-                        ]
-                    ]
-                ];
-            } 
-
-            $rc_ts = REDCap::saveData(
-                $project_id,
-                'array',
-                $z
-            ); 
         }
-
-        print "<p>--- FIPS ADDRESS UPDATER ---<p>"
-        . "<br>{$N} addresses processed."
-        . "<br>{$Nu} FIPS address record(s) updated."
-        ;
-    
     }
 
     private function saveAddressData( $xx ){
@@ -257,141 +149,6 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         print "<p>".print_r($rc, true)."</p>";
     }
 
-    /**
-     * Assumes address string of the form
-     * 
-     * street
-     * street
-     * ... 
-     * street 
-     * city[,] state zip
-     * 
-     * state MUST be the 2-char abbrev
-     * 
-     * @param mixed $address 
-     * @param mixed $street 
-     * @param mixed $city 
-     * @param mixed $state 
-     * @param mixed $zip 
-     * @return void 
-     */
-    function singleAddressFieldParser($address, &$street, &$city, &$state, &$zip){
-
-        $states = array(
-            'AL',
-            'AK',
-            'AS',
-            'AZ',
-            'AR',
-            'CA',
-            'CO',
-            'CT',
-            'DE',
-            'DC',
-            'FM',
-            'FL',
-            'GA',
-            'GU',
-            'HI',
-            'ID',
-            'IL',
-            'IN',
-            'IA',
-            'KS',
-            'KY',
-            'LA',
-            'ME',
-            'MH',
-            'MD',
-            'MA',
-            'MI',
-            'MN',
-            'MS',
-            'MO',
-            'MT',
-            'NE',
-            'NV',
-            'NH',
-            'NJ',
-            'NM',
-            'NY',
-            'NC',
-            'ND',
-            'MP',
-            'OH',
-            'OK',
-            'OR',
-            'PW',
-            'PA',
-            'PR',
-            'RI',
-            'SC',
-            'SD',
-            'TN',
-            'TX',
-            'UT',
-            'VT',
-            'VI',
-            'VA',
-            'WA',
-            'WV',
-            'WI',
-            'WY',
-            'AE',
-            'AA',
-            'AP'
-        );
-    
-        $address = trim($address);
-    
-        /**
-         * convert \r\n and \r to \n
-         */
-        $address = str_replace("\r", "\n", $address);
-        $address = str_replace("\n\n", "\n", $address);
-        $address = str_replace("\t", " ", $address);
-        $address = str_replace(",", ", ", $address);
-        $address = str_replace("  ", " ", $address);
-    
-        $address_lines = explode("\n", $address);
-    
-        $nLines = count($address_lines);
-    
-        $street = "";
-        $state = "";
-        $city = "";
-        $zip = "";
-    
-        $lnum = 0;
-    
-        foreach ($address_lines as $address_line){
-        
-            $lnum++;
-        
-            if ( $lnum < $nLines ){
-        
-                if ( $address_line ) {
-                    if ($street) $street .= "\n";
-                    $street .= $address_line;
-                }
-            }
-            else {
-        
-                for ($s=0; $s<count($states); $s++){
-        
-                    $i = stripos($address_line." ", " ".$states[$s]." ");
-        
-                    if ( $i !== false ){
-        
-                        $city = trim(substr($address_line, 0, $i), " ,\n\r\t\v\x00");
-                        $state = $states[$s];
-                        $zip = trim(substr($address_line, $i+4),  " ,\n\r\t\v\x00");
-                        break;
-                    }
-                }
-            }
-        }         
-    }
     public function objectProperties()
     {
         $propKeys = [];
@@ -619,144 +376,15 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         if ( $data_source==="redcap" ){
 
-            return $this->getFipsRecordsREDCap( $data );
+            $io = new FIOREDCap();
         }
         else if ( $data_source==="database" ){
 
-            return $this->getFipsRecordsDatabase( $data );
-        }
-        else return [];
-    }
-
-    private function getFipsRecordsREDCap( $data, $limit=5000 ){
-
-        $filter = $data['filter'];
-
-        $record = $data['record'];
-
-        $project_id = $this->getProjectId();
-
-        $event_id = $this->getProjectSetting('fips-event');
-
-        $idfield = $this->getRecordIdField();
-
-        $sql = "
-SELECT d.`record`, d.`value` AS `fips_address_timestamp`
-	, IFNULL(f1.`value`, '') AS fips_match_status
-	, IFNULL(f2.`value`, '') AS fips_match_result
- 	, IFNULL(f3.`value`, '') AS fips_code
-	, IFNULL(f4.`value`, '') AS fips_state
-	, IFNULL(f5.`value`, '') AS fips_county
-	, IFNULL(f6.`value`, '') AS fips_tract
-	, IFNULL(f7.`value`, '') AS fips_block
-	, IFNULL(a1.`value`, '') AS fips_address_original
-	, IFNULL(a2.`value`, '') AS fips_address_street
-	, IFNULL(a3.`value`, '') AS fips_address_city
-	, IFNULL(a4.`value`, '') AS fips_address_state
-	, IFNULL(a5.`value`, '') AS fips_address_zip
-    , IFNULL(a6.`value`, '') AS fips_address_submitted
-    , IFNULL(a7.`value`, '') AS fips_address_matched
-    , IFNULL(a8.`value`, '') AS fips_match_type
-    , IFNULL(a9.`value`, '') AS fips_longitude
-    , IFNULL(aa.`value`, '') AS fips_latitude
-    , IFNULL(ab.`value`, '') AS fips_tigerlineid
-    , IFNULL(ac.`value`, '') AS fips_tigerlineside
-    , IFNULL(ad.`value`, '') AS fips_census_block_group
-
-FROM redcap_data d
-
-    LEFT JOIN redcap_data f1 ON f1.project_id=d.project_id AND f1.event_id=d.event_id AND f1.`record`=d.`record` AND f1.field_name='fips_match_status'
-    LEFT JOIN redcap_data f2 ON f2.project_id=d.project_id AND f2.event_id=d.event_id AND f2.`record`=d.`record` AND f2.field_name='fips_match_result'
-    LEFT JOIN redcap_data f3 ON f3.project_id=d.project_id AND f3.event_id=d.event_id AND f3.`record`=d.`record` AND f3.field_name='fips_code'
-    LEFT JOIN redcap_data f4 ON f4.project_id=d.project_id AND f4.event_id=d.event_id AND f4.`record`=d.`record` AND f4.field_name='fips_state'
-    LEFT JOIN redcap_data f5 ON f5.project_id=d.project_id AND f5.event_id=d.event_id AND f5.`record`=d.`record` AND f5.field_name='fips_county'
-    LEFT JOIN redcap_data f6 ON f6.project_id=d.project_id AND f6.event_id=d.event_id AND f6.`record`=d.`record` AND f6.field_name='fips_tract'
-    LEFT JOIN redcap_data f7 ON f7.project_id=d.project_id AND f7.event_id=d.event_id AND f7.`record`=d.`record` AND f7.field_name='fips_block'
-    LEFT JOIN redcap_data a1 ON a1.project_id=d.project_id AND a1.event_id=d.event_id AND a1.`record`=d.`record` AND a1.field_name='fips_address_original'
-    LEFT JOIN redcap_data a2 ON a2.project_id=d.project_id AND a2.event_id=d.event_id AND a2.`record`=d.`record` AND a2.field_name='fips_address_street'
-    LEFT JOIN redcap_data a3 ON a3.project_id=d.project_id AND a3.event_id=d.event_id AND a3.`record`=d.`record` AND a3.field_name='fips_address_city'
-    LEFT JOIN redcap_data a4 ON a4.project_id=d.project_id AND a4.event_id=d.event_id AND a4.`record`=d.`record` AND a4.field_name='fips_address_state'
-    LEFT JOIN redcap_data a5 ON a5.project_id=d.project_id AND a5.event_id=d.event_id AND a5.`record`=d.`record` AND a5.field_name='fips_address_zip'
-
-    LEFT JOIN redcap_data a6 ON a6.project_id=d.project_id AND a6.event_id=d.event_id AND a6.`record`=d.`record` AND a6.field_name='fips_address_submitted'
-    LEFT JOIN redcap_data a7 ON a7.project_id=d.project_id AND a7.event_id=d.event_id AND a7.`record`=d.`record` AND a7.field_name='fips_address_matched'
-    LEFT JOIN redcap_data a8 ON a8.project_id=d.project_id AND a8.event_id=d.event_id AND a8.`record`=d.`record` AND a8.field_name='fips_match_type'
-    LEFT JOIN redcap_data a9 ON a9.project_id=d.project_id AND a9.event_id=d.event_id AND a9.`record`=d.`record` AND a9.field_name='fips_longitude'
-    LEFT JOIN redcap_data aa ON aa.project_id=d.project_id AND aa.event_id=d.event_id AND aa.`record`=d.`record` AND aa.field_name='fips_latitude'
-    LEFT JOIN redcap_data ab ON ab.project_id=d.project_id AND ab.event_id=d.event_id AND ab.`record`=d.`record` AND ab.field_name='fips_tigerlineid'
-    LEFT JOIN redcap_data ac ON ac.project_id=d.project_id AND ac.event_id=d.event_id AND ac.`record`=d.`record` AND ac.field_name='fips_tigerlineside'
-    LEFT JOIN redcap_data ad ON ad.project_id=d.project_id AND ad.event_id=d.event_id AND ad.`record`=d.`record` AND ad.field_name='fips_census_block_group'
-
-WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=? AND d.`value` IS NOT NULL
-        ";
-
-        $params = [
-            $project_id, $event_id
-        ];
-
-        if ( $filter==="pending"){
-
-            $sql .= " AND IFNULL(f1.`value`, '0')='0' LIMIT {$limit}";
-
-            //return $sql."\n\n".print_r($params, true);
-        }
-        else if ( $filter==="nextbatch"){
-
-            $sql .= " AND f1.`value`=?";
-            $params[] = MATCH_STATUS_NEXT_API_BATCH;
-        }
-        else if ( $filter==="inprocess"){
-
-            $sql .= " AND f1.`value`=?";
-            $params[] = MATCH_STATUS_IN_PROCESS;
-        }
-        else if ( $filter==="closed"){
-
-            $sql .= " AND f1.`value`=? LIMIT {$limit}";
-            $params[] = MATCH_STATUS_CLOSED;
-        }
-        else if ( $filter==="record"){
-
-            if ( !$record ) {
-
-                return [];
-            }
-
-            $sql .= " AND d.`record`=? LIMIT 1";
-
-            $params[] = $record;
-        }
-        else if ( $filter==="all") {
-
-            $sql .= " LIMIT {$limit}";
-        }
-        else if ( $filter==="unmatched"){
-
-            $sql .= " AND f2.`value`='U'";
-        }
-        else if ( $filter==="matched"){
-
-            $sql .= " AND f2.`value`='M'";
-        }
-        else {
-
             return [];
         }
-
-
-        $xx =  Yes3::fetchRecords( $sql, $params );
-
-        // perform a 'natural sort' on the result
-        usort( $xx, function($a, $b){ return strnatcmp($a['record'], $b['record']); });
-
-        return $xx;
+        
+        return $io->getFIPSrecords($data);
     }
-
-    private function getFipsRecordsDatabase( $data ){
-
-        return [];
-    }
-
 
     private function saveFipsRecord( $data ){
 
@@ -764,43 +392,13 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
         if ( $data_source==="redcap" ){
 
-            return $this->saveFipsRecordREDCap( $data );
+            $io = new FIOREDCap();
         }
         else if ( $data_source==="database" ){
 
-            return $this->saveFipsRecordDatabase( $data );
+            return "No DB yet";
         }
-        else return [];
-    }
-
-    private function saveFipsRecordREDCap( $data ){
-
-        $x = $data['data'];
-
-        $record = $data['record'];
-
-        $event_id = $this->getProjectSetting('fips-event');
-
-        $project_id = $this->getProjectId();
-
-        $x = [
-            $record => [
-                $event_id => $data['data']
-            ]
-        ];
-
-        return REDCap::saveData(
-
-            $project_id,
-            'array',
-            $x,
-            'overwrite'
-        );
-    }
-
-    private function saveFipsRecordDatabase( $data ){
-
-        return "no db support yet";
+        return $io->saveFIPSrecord($data, $this->getUser()->getUsername());
     }
 
     private function updateApiBatch(){
@@ -809,13 +407,15 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
         if ( $data_source==="redcap" ){
 
-            return $this->updateApiBatchREDCap();
+            $io = new FIOREDCap();
         }
         else if ( $data_source==="database" ){
 
-            return $this->updateApiBatchDatabase();
+            return "No DB yet";
         }
         else return "EM config error";
+
+        return $io->updateAPIbatch();
     }
 
     private function updateApiBatchREDCap(){
@@ -827,7 +427,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         $project_id = $this->getProjectId();
 
         $current = Yes3::fetchValue("SELECT count(*) FROM redcap_data WHERE project_id=? AND `event_id`=? AND field_name='fips_match_status' AND `value`=?", 
-            [$project_id, $event_id, MATCH_STATUS_NEXT_API_BATCH]);
+            [$project_id, $event_id, FIO::MATCH_STATUS_NEXT_API_BATCH]);
 
         $remaining = $batchSize - $current;
 
@@ -846,13 +446,13 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         LIMIT ?
         ";
 
-        $yy = Yes3::fetchRecords($sql, [$project_id, $event_id, MATCH_STATUS_NEXT_API_BATCH, $remaining]);
+        $yy = Yes3::fetchRecords($sql, [$project_id, $event_id,   FIO::MATCH_STATUS_NEXT_API_BATCH, $remaining]);
 
         $updates = [];
 
         foreach( $yy as $y ){
 
-            $updates[$y['record']][$event_id]['fips_match_status'] = MATCH_STATUS_NEXT_API_BATCH;
+            $updates[$y['record']][$event_id]['fips_match_status'] = FIO::MATCH_STATUS_NEXT_API_BATCH;
         }
 
         $rc = REDCap::saveData(
@@ -915,24 +515,6 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
     
     /* -- API -- */
 
-    private function getRecordFromLinkageIdREDCap( $fips_linkage_id ){
-
-        $event_id = $this->getProjectSetting('fips-event');
-
-        $project_id = $this->getProjectId();
-
-        $sql = "
-        SELECT d.`record` 
-        FROM redcap_data d
-        WHERE d.project_id=? AND d.field_name='fips_linkage_id' AND d.`event_id`=? AND d.`value`=?
-        LIMIT 1
-        ";
-
-        $params = [$project_id, $event_id, $fips_linkage_id];
-
-        return Yes3::fetchValue($sql, $params);
-    }
-
     private function callApi($data){
 
         $record = $data['record'];
@@ -946,134 +528,55 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
         if ( $data_source==="redcap" ){
 
-            return $this->callApiREDCap($record);
+            $io = new FIOREDCap();
         }
         else if ( $data_source==="database" ){
 
-            return $this->callApiDatabase($record);
+            return "No DB Yet";
         }
         else return "EM config error";
-    }
 
-    private function callApiREDCap($record){
+        $timestamp = Yes3::isoTimeStampString();
 
-        $event_id = $this->getProjectSetting('fips-event');
+        $temp_file_name = $io->makeCsvForApiCall($record);
 
-        $project_id = $this->getProjectId();
-
-        $params = [ $project_id, $event_id ];
-
-        $extraWhere = "";
-
-        if ( $record ){
-
-            $extraWhere = "AND k.`record`=?";
-            $params[] = $record;
-            $limit = 1;
-        }
-        else {
-
-            $extraWhere = "AND ms.`value`=?";
-            $params[] = MATCH_STATUS_NEXT_API_BATCH;
-
-            $limit = $this->getProjectSetting('api-batch-size');
-        }
-
-        $sql = "SELECT k.`value` AS `fips_linkage_id`
-            , a2.`value` AS `fips_address_street`
-            , a3.`value` AS `fips_address_city`
-            , a4.`value` AS `fips_address_state`
-            , a5.`value` AS `fips_address_zip`
-        FROM redcap_data k
-            LEFT  JOIN redcap_data ms ON ms.project_id=k.project_id AND ms.event_id=k.event_id AND ms.`record`=k.`record` AND ms.field_name='fips_match_status'
-            INNER JOIN redcap_data a2 ON a2.project_id=k.project_id AND a2.event_id=k.event_id AND a2.`record`=k.`record` AND a2.field_name='fips_address_street'
-            INNER JOIN redcap_data a3 ON a3.project_id=k.project_id AND a3.event_id=k.event_id AND a3.`record`=k.`record` AND a3.field_name='fips_address_city'
-            INNER JOIN redcap_data a4 ON a4.project_id=k.project_id AND a4.event_id=k.event_id AND a4.`record`=k.`record` AND a4.field_name='fips_address_state'
-            INNER JOIN redcap_data a5 ON a5.project_id=k.project_id AND a5.event_id=k.event_id AND a5.`record`=k.`record` AND a5.field_name='fips_address_zip'
-        WHERE k.project_id=? AND k.event_id=? AND k.field_name='fips_linkage_id' {$extraWhere}
-        ORDER BY 0+k.`value`
-        LIMIT {$limit}";
-
-        $yy = Yes3::fetchRecords($sql, $params);
-
-        $temp_file_name = tempnam(sys_get_temp_dir(), 'fips') . '.csv';
-
-        //return $temp_file_name;
-
-        $fp = fopen( $temp_file_name, 'w' );
-
-        for($i=0; $i<count($yy); $i++){
-
-            fputcsv($fp, $yy[$i]);
-        }
-
-        fclose($fp);
-
-        //return file_get_contents( $temp_file_name );
+        //return file_get_contents($temp_file_name);
 
         $geoData = $this->geocodeAddressFile($temp_file_name);
 
-        $records = [];
+        if ( !is_array($geoData) ){
 
-        $timestamp = strftime('%F %T');
+            return "No records";
+        }
 
-        $n = 0;
-        $nClosed = 0;
-        $nMatchedExact = 0;
-        $nMatchedNonExact = 0;
-        $nUnmatched = 0;
+        for($i=0; $i<count($geoData);$i++) {
 
-        foreach( $geoData as $geoRecord ){
+            if ( $geoData[$i]['fips_linkage_id'] ){
 
-            $n++;
+                if ( $geoData[$i]['fips_match_type']==='Exact' ){
 
-            if ( $geoRecord['fips_linkage_id'] ){
+                    $geoData[$i]['fips_match_status'] = FIO::MATCH_STATUS_CLOSED;
+                 }
+                else if ( $geoData[$i]['fips_match_type']==='Non_Exact' ){
 
-                $record = $this->getRecordFromLinkageIdREDCap($geoRecord['fips_linkage_id']);
-
-                if ( $geoRecord['fips_match_type']==='Exact' ){
-
-                    $nMatchedExact++;
-
-                    $geoRecord['fips_match_status'] = MATCH_STATUS_CLOSED;
-                }
-                else if ( $geoRecord['fips_match_type']==='Non_Exact' ){
-
-                    $nMatchedNonExact++;
-
-                    $geoRecord['fips_match_status'] = MATCH_STATUS_IN_PROCESS;
+                    $geoData[$i]['fips_match_status'] = FIO::MATCH_STATUS_IN_PROCESS;
                 }
                 else {
 
-                    $nUnmatched++;
+                    $geoData[$i]['fips_match_status'] = FIO::MATCH_STATUS_IN_PROCESS;
+                 }
 
-                    $geoRecord['fips_match_status'] = MATCH_STATUS_IN_PROCESS;
-                }
-
-                $geoRecord['fips_match_user'] = $this->getUser()->getUsername();
-                $geoRecord['fips_match_timestamp'] = $timestamp;
-
-                $records[$record][$event_id] = $geoRecord;
+                $geoData[$i]['fips_match_user'] = $this->getUser()->getUsername();
+                $geoData[$i]['fips_match_timestamp'] = $timestamp;
             }
         }
 
-        $rc = REDCap::saveData(
-            $project_id,
-            'array',
-            $records,
-            'overwrite'
-        );
+        return $io->saveGeoData( $geoData );
+    }
 
-        if ( $rc['errors'] ){
+    function prepareAddressElement( $s ){
 
-            return "REDCap reports the following error(s): " . implode(";", $rc['errors'] );
-        }
-        else {
-            return "API call succeeded.<br>{$n} record(s) processed.<br>{$nMatchedExact} exact match(es).<br>{$nMatchedNonExact} fuzzy match(es).<br>{$nUnmatched} not matched.";
-            //return print_r($records, true);
-            //return print_r($geoData, true);
-            //return print_r($rc, true);
-        }
+        return str_replace(["\r", "\t", "\n"], ["", " ", ", "], $s);
     }
 
     /**
@@ -1140,7 +643,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
         if ( !$api_batch_size = $this->getProjectSetting('api-batch-size') ){
 
-            $this->setProjectSetting('api-batch-size', DEFAULT_API_BATCH_SIZE);
+            $this->setProjectSetting('api-batch-size', FIO::DEFAULT_API_BATCH_SIZE);
             $api_batch_size = $this->getProjectSetting('api-batch-size');
         }
 
@@ -1169,7 +672,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         WHERE k.project_id=? AND k.event_id=? AND k.field_name='fips_match_status' AND k.`value`=? AND m.`value` IS NULL
         ";
 
-        $params = [$project_id, $event_id, MATCH_STATUS_NEXT_API_BATCH];
+        $params = [$project_id, $event_id, FIO::MATCH_STATUS_NEXT_API_BATCH];
 
         $yy = Yes3::fetchRecords($sql, $params);
 
@@ -1179,7 +682,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
         foreach($yy as $y){
             $n++;
-            $records[ $y['record'] ][ $event_id ]['fips_match_status'] = MATCH_STATUS_PENDING;
+            $records[ $y['record'] ][ $event_id ]['fips_match_status'] = FIO::MATCH_STATUS_PENDING;
         }
         
         $rc = REDCap::saveData(
@@ -1196,6 +699,11 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         else {
             return "API call succeeded.<br>{$n} record(s) were set from 'next API batch' to 'pending'.";
         }   
+    }
+
+    public function getCopyRight(){
+
+        return REDCap::getCopyright() . "<br />Fabulous FIPS-O-Matic &copy; 2023 CRI Web Tools LLC";
     }
 
     /**
@@ -1272,6 +780,11 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         else if ($action==="set-api-batch-size") {
 
             return $this->setApiBatchSize($payload);
+        }
+
+        else if ($action==="get-copyright") {
+
+            return $this->getCopyright();
         }
                         
         else return "No can do: the action '{$action}' is most abhorrent.";

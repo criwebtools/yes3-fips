@@ -18,6 +18,7 @@
 
     "permissions": [
         "redcap_module_link_check_display",
+        "redcap_save_record",
         "redcap_module_ajax"
     ],
 
@@ -82,26 +83,8 @@
             }
         },
         {
-            "key": "street-1-field-name", 
+            "key": "street-field-name", 
             "name": "Street field name",
-            "type": "field-list",
-            "branchingLogic": {
-                "type": "and",
-                "conditions": [
-                    {
-                        "field": "data-source",
-                        "value": "redcap"
-                    },
-                    {
-                        "field": "address-field-type",
-                        "value": "multiple"
-                    }
-                ]
-            }
-        },
-        {
-            "key": "street-2-field-name", 
-            "name": "Optional second street field name",
             "type": "field-list",
             "branchingLogic": {
                 "type": "and",
@@ -212,7 +195,8 @@
         "call-api",
         "get-summary",
         "get-api-batch-size",
-        "set-api-batch-size"
+        "set-api-batch-size",
+        "get-copyright"
     ],
 
     "no-auth-pages": [

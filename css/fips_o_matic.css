@@ -9,8 +9,16 @@ input#fips-record, .fips-hidden {
     border-color: var(--y3-secondary) !important;
 }
 
-tr.fips-changed td{
+tr.fips-saved td:not(.fips-edit-link) {
 
+    font-family: var(--y3-font-family-bolder) !important;
+    color: var(--y3-secondary) !important;
+    font-style: italic;
+}
+
+tr.fips-changed:not(.fips-saved) td:not(.fips-edit-link){
+
+    font-family: var(--y3-font-family-regular) !important;
     color: var(--y3-secondary) !important;
     font-style: italic;
 }
@@ -160,15 +168,24 @@ tbody#fips-editor-tbody textarea {
 
     width: 100% !important;
     resize: vertical;
-    height: 4em;
-    background-color: var(--y3-background-color);
+    height: calc( 2 * 1.5em + var(--y3-space-sm + 1));
 }
+
+
+tbody#fips-editor-tbody textarea,
+tbody#fips-editor-tbody select,
+tbody#fips-editor-tbody input[type=text] {
+
+    background-color: var(--y3-background-color);
+    border-color: var(--y3-background-color);
+}
+
 
 .fips-disabled {
 
     background-color: transparent !important;
-    border-color: transparent !important;
-    color: var(--y3-secondary) !important;
+    /*border-color: transparent !important;*/
+    color: var(--y3-subtle) !important;
 }
 
 #fips-editor-message{
