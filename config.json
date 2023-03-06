@@ -1,9 +1,9 @@
 {
-    "name": "The famous FIPS-O-MATIC",
+    "name": "The Fabulous FIPS-O-Matic",
 
     "namespace": "Yale\\Yes3Fips",
 
-    "description": "The Fabulous FIPS-O-MATIC",
+    "description": "The Fabulous FIPS-O-Matic",
 
     "prefix": "yes3_fips",
 
@@ -18,10 +18,17 @@
 
     "permissions": [
         "redcap_module_link_check_display",
+        "redcap_save_record",
         "redcap_module_ajax"
     ],
 
     "project-settings": [
+        {
+            "key": "allowed-user",
+            "name": "allowed user",
+            "type": "user-list",
+            "repeatable": true
+        },
         {
             "key": "data-source",
             "name": "Data source",
@@ -57,11 +64,7 @@
             "choices": [
                 {"value": "single", "name":"A single notes field"},
                 {"value": "multiple", "name":"Discrete fields for street, city, state, zip"}
-            ],
-            "branchingLogic": {
-                "field": "data-source",
-                "value": "redcap"
-            }
+            ]
         },
         {
             "key": "address-field-name", 
@@ -82,26 +85,8 @@
             }
         },
         {
-            "key": "street-1-field-name", 
+            "key": "street-field-name", 
             "name": "Street field name",
-            "type": "field-list",
-            "branchingLogic": {
-                "type": "and",
-                "conditions": [
-                    {
-                        "field": "data-source",
-                        "value": "redcap"
-                    },
-                    {
-                        "field": "address-field-type",
-                        "value": "multiple"
-                    }
-                ]
-            }
-        },
-        {
-            "key": "street-2-field-name", 
-            "name": "Optional second street field name",
             "type": "field-list",
             "branchingLogic": {
                 "type": "and",
@@ -177,9 +162,45 @@
             "type": "text"
         },
         {
-            "key": "database-header",
-            "name": "-- sorry, database access not supported yet --",
-            "type": "descriptive",
+            "key": "api-batch-order",
+            "name": "batch assignment order",
+            "type": "radio",
+            "choices": [
+                {"value": "random", "name":"random"},
+                {"value": "record", "name":"record id"}
+            ]
+        },
+        {
+            "key": "db-host",
+            "name": "Database host",
+            "type": "text",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "database"
+            }
+        },
+        {
+            "key": "db-user",
+            "name": "Database user",
+            "type": "text",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "database"
+            }
+        },
+        {
+            "key": "db-password",
+            "name": "Database user password",
+            "type": "password",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "database"
+            }
+        },
+        {
+            "key": "db-database",
+            "name": "Database",
+            "type": "text",
             "branchingLogic": {
                 "field": "data-source",
                 "value": "database"
@@ -207,12 +228,14 @@
     "auth-ajax-actions":[
         "get-fips-records",
         "save-fips-record",
+        "restore-fips-record",
         "clear-api-batch",
         "update-api-batch",
         "call-api",
         "get-summary",
         "get-api-batch-size",
-        "set-api-batch-size"
+        "set-api-batch-size",
+        "get-copyright"
     ],
 
     "no-auth-pages": [

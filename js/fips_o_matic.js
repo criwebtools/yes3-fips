@@ -10,6 +10,21 @@ const FIPS = {
         closed: 0,
         closedMatched: 0,
         closedUnmatched: 0
+    },
+
+    constants: {
+        NEVER: 0,
+        IF_SINGLE_ADDRESS_FIELD: 1,
+        IF_MULTIPLE_ADDRESS_FIELDS: 2,
+        ALWAYS: 3,
+
+        SHOW_API_BUTTON: 1,
+        HIDE_API_BUTTON: 2,
+
+        MATCH_STATUS_PENDING:'0',
+        MATCH_STATUS_NEXT_API_BATCH: '1',
+        MATCH_STATUS_IN_PROCESS: '2',
+        MATCH_STATUS_CLOSED: '3'
     }
 };
 
@@ -23,11 +38,27 @@ FIPS.showRefreshElement = function(){
     $('#fips-refresh').show();
 }
 
-FIPS.hideEditorSaveButton = function(){
+FIPS.showListCount = function( n ){
+
+    $('#fips-list-count').html(`n = ${n}`);
+}
+
+FIPS.hideListCount = function( n ){
+
+    $('#fips-list-count').html("");
+}
+
+FIPS.hideEditorSaveButton = function(showAPIbutton){
+
+    showAPIbutton = showAPIbutton || FIPS.constants.SHOW_API_BUTTON;
 
     //$('input.yes3-save-button').css('opacity', '0.5');
     $('#fips-editor input.fips-savebutton').css('visibility', 'hidden');
-    $('#fips-editor input.fips-apibutton').css('visibility', 'visible');
+
+    if ( showAPIbutton===FIPS.constants.SHOW_API_BUTTON ){
+
+        $('#fips-editor input.fips-apibutton').css('visibility', 'visible');
+    }
 }
 
 FIPS.showEditorSaveButton = function(){
@@ -35,6 +66,23 @@ FIPS.showEditorSaveButton = function(){
     //$('input.yes3-save-button').css('opacity', '1.0');
     $('#fips-editor input.fips-savebutton').css('visibility', 'visible');
     $('#fips-editor input.fips-apibutton').css('visibility', 'hidden');
+}
+
+FIPS.clearEditorChangedStatus = function(){
+
+    $(`.fips-changed`).removeClass('fips-changed');
+
+    FIPS.hideEditorSaveButton( FIPS.constants.HIDE_API_BUTTON );
+}
+
+FIPS.hideEditorRestoreButton = function(){
+
+    $('#fips-editor input.fips-restorebutton').css('visibility', 'hidden');
+}
+
+FIPS.showEditorRestoreButton = function(){
+
+    $('#fips-editor input.fips-restorebutton').css('visibility', 'visible');
 }
 
 FIPS.setListeners = function(){
@@ -160,7 +208,7 @@ FIPS.getTheList = function(){
 
 FIPS.populateTheList = function( response ){
 
-    //console.log( 'populateTheList', response );
+    console.log( 'populateTheList', response );
 
     const $tbody = $('div#fips-list-container tbody');
 
@@ -183,15 +231,18 @@ FIPS.populateTheList = function( response ){
         }));
 
         $tr.append( $('<td>', {
-            text: response[i].fips_match_result
+            text: response[i].fips_match_result,
+            class: 'fips_match_result fips-disposable'
         }));
 
         $tr.append( $('<td>', {
-            text: response[i].fips_match_type
+            text: response[i].fips_match_type,
+            class: 'fips_match_type'
         }));
 
         $tr.append( $('<td>', {
-            html: `<a href='javaScript:FIPS.openEditor("${response[i].record}")'>edit</a>`
+            html: `<a href='javaScript:FIPS.openEditor("${response[i].record}")'>edit</a>`,
+            class: 'fips-edit-link'
         }));
 
         $tbody.append( $tr );
@@ -200,6 +251,12 @@ FIPS.populateTheList = function( response ){
     if ( response.length ) {
 
         FIPS.showRefreshElement();
+
+        FIPS.showListCount( response.length );
+    }
+    else {
+
+        FIPS.hideListCount();
     }
 }
 
@@ -209,7 +266,7 @@ FIPS.populateTheList = function( response ){
 
 FIPS.populateTheEditor = function(response){
 
-    //console.log('FIPS.populatedTheEditor', response);
+    console.log('FIPS.populatedTheEditor', response);
 
     const x = response[0];
 
@@ -220,6 +277,9 @@ FIPS.populateTheEditor = function(response){
 
     // clean slate, no save
     FIPS.hideEditorSaveButton();
+
+    // more cleanup
+    $('input#fips_accept_match').remove();
 
     for(const field_name in x ){
 
@@ -235,8 +295,28 @@ FIPS.populateTheEditor = function(response){
         //console.log('==>', field_name, value, $input);
     }
 
+    if ( x.fips_match_type === 'Non_Exact' && x.fips_match_status !== FIPS.constants.MATCH_STATUS_CLOSED ){
+
+        $('input#fips_match_type')
+            .after($('<input>', {
+                'type': 'button',
+                'value': 'accept as a match',
+                'id': 'fips_accept_match'
+            })
+                .css({'margin-left': '10px'})
+                .off('click')
+                .on('click', function(){
+
+                    $('select#fips_match_status').val(FIPS.constants.MATCH_STATUS_CLOSED).trigger('propertychange');
+                    FIPS.saveEditorRecord(1);
+                    //FIPS.closeEditor(0);
+                })
+            )
+        ;
+    }
+
     $tbody.find('input, select, textarea')
-        //.off('keypress')
+        .off('input propertychange paste')
         .on('input propertychange paste', function(){
             if ( !$(this).hasClass('fips-changed') ){
                 $(this).addClass('fips-changed');
@@ -261,9 +341,33 @@ FIPS.populateTheEditor = function(response){
 
     $formContainer.height( formHeight+'px' );
 
+    // updates style to mark row being edited, also interim data saves (e.g. from API call)
+    FIPS.updateListFromEditor();
+
     FIPS.hideEditorSaveButton();
 
-    FIPS.clearEditorMessage();
+    if ( x.fips_history_id ){
+
+        FIPS.showEditorRestoreButton();
+    }
+    else {
+
+        FIPS.hideEditorRestoreButton();
+    }
+
+    let popmsg = '';
+
+    if ( x.fips_match_result ){
+
+        popmsg += x.fips_match_result + "&nbsp;";
+    }
+
+    if ( x.fips_match_type ){
+
+        popmsg += x.fips_match_type;
+    }
+
+    FIPS.postEditorMessage( popmsg );
 }
 
 FIPS.openEditor = function( record ){
@@ -276,16 +380,31 @@ FIPS.openEditor = function( record ){
 
     const fields = YES3.moduleProperties.fips_editor_fields;
 
+    const address_field_type = YES3.moduleProperties.settings.address_field_type; // single or multiple
+
     $tbody
         .empty()
-        .append( FIPS.fipsEditorRow('record', 'REDCap record', 'text', 0, 50, []) )
+        .append( FIPS.fipsEditorRow('record', 'Study record', 'text', 0, 50, []) )
+        .append( FIPS.fipsEditorRow('fips_linkage_id', 'linkage id', 'text', 0, 50, []) )
     ;
 
     for(let i=0; i<fields.length; i++){
 
+        if ( fields[i].display === FIPS.constants.IF_SINGLE_ADDRESS_FIELD && address_field_type==='multiple' ){
+
+            continue;
+        }
+
+        const editable = (
+            (fields[i].editable === FIPS.constants.ALWAYS) 
+            || ( fields[i].editable === FIPS.constants.IF_SINGLE_ADDRESS_FIELD && address_field_type==='single' )
+            || ( fields[i].editable === FIPS.constants.IF_MULTIPLE_ADDRESS_FIELDS && address_field_type==='multiple' )
+            ) ? 1 : 0
+        ;
+
         let choices = ( fields[i].choices==undefined ) ? []:fields[i].choices;
 
-        $tbody.append( FIPS.fipsEditorRow(fields[i].field_name, fields[i].label, fields[i].type, fields[i].editable, fields[i].size, choices) );
+        $tbody.append( FIPS.fipsEditorRow(fields[i].field_name, fields[i].label, fields[i].type, editable, fields[i].size, choices) );
     }
 
     FIPS.loadRecordIntoEditor( record );
@@ -398,10 +517,61 @@ FIPS.closeEditor = function( save ){
     }
 }
 
-FIPS.saveEditorRecord = function(){
+FIPS.restoreEditorRecord = function(){
 
     const $tbody = $('tbody#fips-editor-tbody');
     const record = $tbody.find('input#record').val();
+    const fips_linkage_id = $tbody.find('input#fips_linkage_id').val();
+
+    FIPS.postEditorMessage("WAIT");
+
+    YES3.ajax(
+        'restore-fips-record',
+        {
+            'fips_linkage_id': fips_linkage_id
+        },
+        FIPS.restoreEditorRecordConfirmation
+    );
+}
+
+FIPS.restoreEditorRecordConfirmation = function(response){
+
+    console.log('restoreEditorRecordConfirmation: ', response);
+
+    const $tbodyEd = $('tbody#fips-editor-tbody');
+
+    const record = $tbodyEd.find('input#record').val();
+
+    if ( response === "success" ){
+
+        // post confirmed changes to list, and mark as saved
+        FIPS.updateListFromEditor(true);
+
+        // update the summary table
+        FIPS.getTheSummary();
+
+        FIPS.loadRecordIntoEditor( record ); // re-load record 
+    }
+    else {
+
+        FIPS.postEditorMessage("ERROR", true);
+
+        YES3.hello(response);
+
+        // hide the save button, and reset all editor 'changed'
+        // flags so that the save button listener will respond
+        // to new changes
+        FIPS.clearEditorChangedStatus();
+    }
+}
+
+FIPS.saveEditorRecord = function( close_editor_on_success ){
+
+    close_editor_on_success = close_editor_on_success || 0;
+
+    const $tbody = $('tbody#fips-editor-tbody');
+    const record = $tbody.find('input#record').val();
+    const fips_linkage_id = $tbody.find('input#fips_linkage_id').val();
 
     FIPS.postEditorMessage("WAIT");
 
@@ -412,13 +582,16 @@ FIPS.saveEditorRecord = function(){
         x[$(this).prop('id')] = $(this).val();
     });
 
-    console.log('saveEditorRecord', x)
+    console.log('saveEditorRecord', x);
 
     YES3.ajax(
         'save-fips-record',
         {
             'data': x,
-            'record': record
+            'record': record,
+            'fips_linkage_id': fips_linkage_id,
+            'close_editor_on_success': close_editor_on_success
+
         },
         FIPS.saveEditorRecordConfirmation
     );
@@ -426,30 +599,68 @@ FIPS.saveEditorRecord = function(){
 
 FIPS.saveEditorRecordConfirmation = function(response){
 
+    console.log('saveEditorRecordConfirmation: ', response);
+
     const $tbodyEd = $('tbody#fips-editor-tbody');
 
     const record = $tbodyEd.find('input#record').val();
 
-    if ( response.item_count > 0 ){
+    if ( response === "success" || response === "success-and-close"){
 
-        FIPS.updateListFromEditor();
+        // post confirmed changes to list, and mark as saved
+        FIPS.updateListFromEditor(true);
 
-        FIPS.loadRecordIntoEditor( record ); // re-load record 
-
+        // update the summary table
         FIPS.getTheSummary();
 
-        //YES3.closePanel('fips-editor');
+        if ( response === "success-and-close" ) {
+
+            YES3.closePanel('fips-editor');
+        }
+        else {
+
+            FIPS.loadRecordIntoEditor( record ); // re-load record 
+        }
     }
     else {
 
-        YES3.hello('Error: The save operation failed. See the console log for more information.')
-        console.error( 'saveEditorRecordConfirmation FAIL', response );
+        FIPS.postEditorMessage("ERROR", true);
+
+        YES3.hello(response);
+
+        // hide the save button, and reset all editor 'changed'
+        // flags so that the save button listener will respond
+        // to new changes
+        FIPS.clearEditorChangedStatus();
     }
 }
 
-FIPS.postEditorMessage = function(msg){
+FIPS.postEditorMessage = function(msg, danger, timeout){
 
-    $('#fips-editor-message').html(msg);
+    danger = danger || false;
+
+    let msgClass = ( danger ) ? "yes3-danger":"yes3-warning";
+
+    timeout = timeout || 10000;
+
+    if ( typeof FIPS.messageTimeoutId === 'number' ){
+
+        clearTimeout( FIPS.messageTimeoutId );
+
+        FIPS.messageTimeoutId = undefined;
+    }
+
+    $("#fips-editor-message")
+        .removeClass("yes3-warning")
+        .removeClass("yes3-danger")
+        .addClass(msgClass)
+        .html( msg )
+    ;
+
+    FIPS.messageTimeoutId = setTimeout(function(){
+
+        FIPS.clearEditorMessage();
+    }, timeout);
 }
 
 FIPS.clearEditorMessage = function(){
@@ -457,20 +668,33 @@ FIPS.clearEditorMessage = function(){
     $('#fips-editor-message').html("");
 }
 
-FIPS.updateListFromEditor = function(){
+FIPS.updateListFromEditor = function(saved){
+
+    saved = saved || false;
 
     const $tbodyEd = $('tbody#fips-editor-tbody');
     const $tbodyList = $('div#fips-list-container tbody');
     const record = $tbodyEd.find('input#record').val();
     const fips_match_status = $tbodyEd.find('select#fips_match_status').val() || 0;
+    const fips_match_result = $tbodyEd.find('input#fips_match_result').val() || '';
+    const fips_match_type = $tbodyEd.find('input#fips_match_type').val() || '';
     const $row = $tbodyList.find('tr#fips-list-' + record);
 
     $row.addClass('fips-changed');
 
+    if ( saved ){
+
+        $row.addClass('fips-saved');
+    }
+
     $row.find('td.fips_match_status_label').html( FIPS.fips_match_status_labels[fips_match_status] );
+    $row.find('td.fips_match_result').html( fips_match_result );
+    $row.find('td.fips_match_type').html( fips_match_type );
 }
 
 FIPS.updateAPIBatch = function(){
+
+    FIPS.postMessage('WAIT', false, true);
 
     YES3.ajax(
         'update-api-batch',
@@ -491,6 +715,8 @@ FIPS.updateAPIBatchConfirmation = function( response ){
 }
 
 FIPS.clearApiBatch = function(){
+
+    FIPS.postMessage('WAIT', false, true);
 
     YES3.ajax(
         'clear-api-batch',
@@ -528,7 +754,7 @@ FIPS.callApiFromEditor = function(){
 
 FIPS.callApiFromEditorConfirmation = function(response){
 
-    console.log(response);
+    console.log('callApiFromEditorConfirmation', response);
 
     const record = $('#fips-editor input#record').val();
 
@@ -540,7 +766,7 @@ FIPS.callApiFromEditorConfirmation = function(response){
 
 FIPS.callAPI = function(){
 
-    FIPS.postMessage( 'WAIT' );
+    FIPS.postMessage( 'WAIT', false, true );
 
     YES3.ajax(
         'call-api',
@@ -550,6 +776,8 @@ FIPS.callAPI = function(){
 }
 
 FIPS.callAPIConfirmation = function( response ){
+
+    console.log('callAPIConfirmation', response);
 
     FIPS.postMessage( response );
 
@@ -603,20 +831,22 @@ FIPS.onResize = function(){
 
     const top = $listContainer.offset().top;
 
+    const copyHeight = $('#fips-copyright').parent().height();
+
     //const Hf = $('#south').outerHeight();
 
     //console.log('onResize', Hw, top);
 
-    $listContainer.height( (Hw - top - 80)+'px' );
+    $listContainer.height( (Hw - top - copyHeight - 80)+'px' );
 }
 
-FIPS.postMessage = function( msg, danger, timeout ){
+FIPS.postMessage = function( msg, danger, forever ){
 
     danger = danger || false;
 
     let msgClass = ( danger ) ? "yes3-danger":"yes3-warning";
 
-    timeout = timeout || 10000;
+    forever = forever || false;
 
     if ( typeof FIPS.messageTimeoutId === 'number' ){
 
@@ -632,10 +862,13 @@ FIPS.postMessage = function( msg, danger, timeout ){
         .html( msg )
     ;
 
-    FIPS.messageTimeoutId = setTimeout(function(){
+    if ( !forever ){
 
-        FIPS.clearMessage();
-    }, timeout);
+        FIPS.messageTimeoutId = setTimeout(function(){
+
+            FIPS.clearMessage();
+        }, 10000);
+    }
 }
 
 FIPS.clearMessage = function(){

@@ -1,9 +1,16 @@
 <?php 
 
+define('LOG_DEBUG_MESSAGES', '1');
 
 $module = new Yale\Yes3Fips\Yes3Fips();
 
 $module->getCodeFor('fips_o_matic', true);
+
+$copy = $module->getCopyright();
+
+//$module->testDb();
+
+//die("have a nice day");
 
 ?>
 
@@ -35,21 +42,42 @@ $module->getCodeFor('fips_o_matic', true);
 
                 <div class="yes3-flex-vcenter-hleft">
                     <select id="fips-filter">
-                        <option value="" disabled selected>-- select a filter --</option>
-                        <option value="pending">open</option>
-                        <option value="nextbatch">next API batch</option>
-                        <option value="inprocess">in process</option>
-                        <option value="closed">closed</option>
-                        <option value="record">a single record</option>
-                        <option value="all">all records</option>
-                        <option value="unmatched">unmatched</option>
-                        <option value="matched">matched</option>
+
+                        <!--option value="" disabled selected>-- select a filter --</option-->
+
+                        <optgroup label='pre process'>
+                            <option value="pending">pending</option>
+                            <option value="nextbatch">selected for next API batch</option>
+                        </optgroup>
+
+                        <optgroup label='in process'>
+                            <option value="inprocess">all in process records</option>
+                            <option value="inprocess-nomatch">in process: not matched</option>
+                            <option value="inprocess-fuzzy">in process: fuzzy matched</option>
+                            <option value="inprocess-tie">in process: tie</option>
+                        </optgroup>
+
+                        <optgroup label='closed'>
+                            <option value="closed">all closed records</option>
+                            <option value="closed-matched">closed: matched</option>
+                            <option value="closed-unmatched">closed: not matched</option>
+                        </optgroup>
+
+                        <optgroup label='other filters'>
+                            <option value="record">a single record</option>
+                            <option value="all">all records</option>
+                            <option value="unmatched">all unmatched records</option>
+                            <option value="matched">all matched records</option>
+                        </optgroup>
+
                     </select>
                 </div>
 
                 <div class="yes3-flex-vcenter-hleft">
                     <input type='text' id="fips-record" value="" placeholder="record id" onchange="FIPS.getTheList()"/>
                 </div>
+
+                <div class="yes3-flex-vcenter-hleft" id="fips-list-count"></div>
 
                 <div class="yes3-flex-vcenter-hleft">
                     <!--input type='button' id="fips-refresh" value="refresh" onclick="FIPS.getTheList()" /-->
@@ -63,7 +91,7 @@ $module->getCodeFor('fips_o_matic', true);
                     <thead>
                         <th class='fips-record'>record</th>
                         <th class='fips-match-status'>status</th>
-                        <th class='fips-match-result'>match</th>
+                        <th class='fips-match-result fips-disposable'>match</th>
                         <th class='fips-match-type'>type</th>
                         <th class='fips-match-edit'>edit</th>
                     </thead>
@@ -131,6 +159,14 @@ $module->getCodeFor('fips_o_matic', true);
 
         </div>
 
+
+    </div>
+
+    <div class='row yes3-headroom'>
+
+        <div class='col-lg-12 yes3-copyright' id='fips-copyright'>
+            <?= $copy ?>
+        </div>
 
     </div>
 

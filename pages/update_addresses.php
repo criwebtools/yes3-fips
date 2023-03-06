@@ -1,7 +1,7 @@
 <?php 
 
-$module = new Yale\Yes3Fips\Yes3Fips();
+$io = new Yale\Yes3Fips\FIOREDCap();
 
-$module->importAddressesToFipsForm();
+print $io->importAddressesToFipsForm();
 
 ?>

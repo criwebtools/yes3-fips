@@ -469,6 +469,14 @@ label {
     margin-bottom: 0 !important;
 }
 
+.yes3-copyright {
+
+    font-size: var(--y3-font-size) !important;
+    font-family: var(--y3-font-family-light) !important;
+    color: var(--y3-subtle) !important;
+    background-color: transparent !important;
+}
+
 /*
  * when displayed, grays and blocks UI (for modal dialogs)
  */
