@@ -17,6 +17,7 @@ use Yale\Yes3Fips\Yes3;
 use Yale\Yes3Fips\FIPS;
 use Yale\Yes3Fips\FIO;
 use Yale\Yes3Fips\FIOREDCap;
+use Yale\Yes3Fips\FIODbConnection;
 
 class Yes3Fips extends \ExternalModules\AbstractExternalModule
 {
@@ -47,7 +48,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
     public $fips_editor_fields = [
 
-        [ "field_name"=>"fips_match_status", "type"=>"select", "label"=>"status", "editable"=>FIO::ALWAYS, "size"=>50, 
+        [ "field_name"=>"fips_match_status", "type"=>"select", "label"=>"status", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50, 
             "choices"=>[
                 ["value"=>FIO::MATCH_STATUS_PENDING, "label"=>"Pending"],
                 ["value"=>FIO::MATCH_STATUS_NEXT_API_BATCH, "label"=>"Next API batch"],
@@ -56,32 +57,34 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
             ]
         ],
 
-        [ "field_name"=>"fips_address",  "type"=>"textarea", "label"=>"address", "editable"=>FIO::IF_SINGLE_ADDRESS_FIELD, "size"=>100 ],
+        [ "field_name"=>"fips_address",  "type"=>"textarea", "label"=>"address", "editable"=>FIO::IF_SINGLE_ADDRESS_FIELD, "display"=>FIO::IF_SINGLE_ADDRESS_FIELD, "size"=>100 ],
 
-        [ "field_name"=>"fips_address_street","type"=>"textarea", "label"=>"Street", "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "size"=>100 ],
-        [ "field_name"=>"fips_address_city",  "type"=>"text", "label"=>"City",   "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "size"=>100 ],
-        [ "field_name"=>"fips_address_state", "type"=>"text", "label"=>"State",  "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "size"=>50 ],
-        [ "field_name"=>"fips_address_zip",   "type"=>"text", "label"=>"Zip",    "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "size"=>50 ],
+        [ "field_name"=>"fips_address_street","type"=>"textarea", "label"=>"Street", "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_address_city",  "type"=>"text", "label"=>"City",   "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_address_state", "type"=>"text", "label"=>"State",  "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_address_zip",   "type"=>"text", "label"=>"Zip",    "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>50 ],
     
-        [ "field_name"=>"fips_comment",       "type"=>"textarea", "label"=>"comment",  "editable"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_comment",       "type"=>"textarea", "label"=>"comment",  "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>100 ],
 
-        [ "field_name"=>"fips_state",  "type"=>"text", "label"=>"FIPS state code",     "editable"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_county", "type"=>"text", "label"=>"FIPS county code",    "editable"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_tract",  "type"=>"text", "label"=>"FIPS tract code",     "editable"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_block",  "type"=>"text", "label"=>"FIPS block code",     "editable"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_code",   "type"=>"text", "label"=>"15-digit FIPS code",  "editable"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_census_block_group","type"=>"text",     "label"=>"12-digit Census block group",      "editable"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_state",  "type"=>"text", "label"=>"FIPS state code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_county", "type"=>"text", "label"=>"FIPS county code",    "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_tract",  "type"=>"text", "label"=>"FIPS tract code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_block",  "type"=>"text", "label"=>"FIPS block code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_code",   "type"=>"text", "label"=>"15-digit FIPS code",  "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_census_block_group","type"=>"text", "label"=>"12-digit Census block grp", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
 
-        [ "field_name"=>"fips_match_result", "type"=>"text", "label"=>"Match result", "editable"=>FIO::NEVER, "size"=>50 ],
-        [ "field_name"=>"fips_match_type", "type"=>"text", "label"=>"Match type", "editable"=>FIO::NEVER, "size"=>50 ],
+        [ "field_name"=>"fips_match_result", "type"=>"text", "label"=>"Match result", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_match_type", "type"=>"text", "label"=>"Match type", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
 
-        [ "field_name"=>"fips_address_submitted", "type"=>"textarea", "label"=>"Address submitted for match", "editable"=>FIO::NEVER, "size"=>100 ],
+        [ "field_name"=>"fips_address_submitted", "type"=>"textarea", "label"=>"Address submitted for match", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_address_matched", "type"=>"textarea", "label"=>"Matched address", "editable"=>FIO::NEVER, "size"=>100 ],
 
-        [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::NEVER, "size"=>100 ],
-        [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::NEVER, "size"=>100 ],
-        [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>FIO::NEVER, "size"=>50 ],
-        [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "size"=>50 ],
+        [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+
+        [ "field_name"=>"fips_history_id", "type"=>"text", "label"=>"archive id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
         
     ];
 
@@ -105,7 +108,22 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
     function redcap_module_link_check_display($project_id, $link){
 
-        return $link; // display all links to all project staff
+        $allowed_user = $this->getProjectSetting('allowed-user');
+
+        $this_user = $this->getUser()->getUserName();
+
+        if (is_array($allowed_user) ){
+
+            for($i=0; $i<count($allowed_user); $i++){
+
+                if ($allowed_user[$i]===$this_user){
+
+                    return $link;
+                }
+            }
+        }
+
+        return false;
     }
 
     function redcap_save_record ( 
@@ -370,7 +388,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         return $s;
     }
 
-    private function getFipsRecords( $data ){
+    private function getFipsRecords( $params ){
 
         $data_source = $this->getProjectSetting('data-source');
 
@@ -380,13 +398,13 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         }
         else if ( $data_source==="database" ){
 
-            return [];
+            $io = new FIODatabase();
         }
         
-        return $io->getFIPSrecords($data);
+        return $io->getFIPSrecords($params['filter'], $params['record']);
     }
 
-    private function saveFipsRecord( $data ){
+    private function saveFipsRecord( $params ){
 
         $data_source = $this->getProjectSetting('data-source');
 
@@ -396,9 +414,33 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         }
         else if ( $data_source==="database" ){
 
-            return "No DB yet";
+            $io = new FIODatabase();
         }
-        return $io->saveFIPSrecord($data, $this->getUser()->getUsername());
+        return $io->saveFIPSrecord(
+            $params['record'],
+            $params['fips_linkage_id'],
+            $params['data'], 
+            $params['close_editor_on_success'], 
+            $this->getUser()->getUsername()
+        );
+    }
+
+    private function restoreFipsRecord( $params ){
+
+        $data_source = $this->getProjectSetting('data-source');
+
+        if ( $data_source==="redcap" ){
+
+            $io = new FIOREDCap();
+        }
+        else if ( $data_source==="database" ){
+
+            $io = new FIODatabase();
+        }
+        return $io->restoreFIPSrecord(
+            $params['fips_linkage_id'], 
+            $this->getUser()->getUsername()
+        );
     }
 
     private function updateApiBatch(){
@@ -411,64 +453,11 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         }
         else if ( $data_source==="database" ){
 
-            return "No DB yet";
+            $io = new FIODatabase();
         }
         else return "EM config error";
 
         return $io->updateAPIbatch();
-    }
-
-    private function updateApiBatchREDCap(){
-
-        $batchSize = (int) $this->getProjectSetting('api-batch-size');
-
-        $event_id = $this->getProjectSetting('fips-event');
-
-        $project_id = $this->getProjectId();
-
-        $current = Yes3::fetchValue("SELECT count(*) FROM redcap_data WHERE project_id=? AND `event_id`=? AND field_name='fips_match_status' AND `value`=?", 
-            [$project_id, $event_id, FIO::MATCH_STATUS_NEXT_API_BATCH]);
-
-        $remaining = $batchSize - $current;
-
-        if ( $remaining <= 0 ){
-
-            return "The batch quota is full. You may still manually assign records to the next batch.";
-        }
-
-        $sql = "
-        SELECT d.`record` 
-        FROM redcap_data d
-            LEFT JOIN redcap_data f1 ON f1.project_id=d.project_id AND f1.event_id=d.event_id AND f1.`record`=d.`record`AND f1.field_name='fips_match_status'
-        WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=? AND d.`value` IS NOT NULL
-        AND IFNULL(f1.`value`, 0) < ?
-        ORDER BY `record`
-        LIMIT ?
-        ";
-
-        $yy = Yes3::fetchRecords($sql, [$project_id, $event_id,   FIO::MATCH_STATUS_NEXT_API_BATCH, $remaining]);
-
-        $updates = [];
-
-        foreach( $yy as $y ){
-
-            $updates[$y['record']][$event_id]['fips_match_status'] = FIO::MATCH_STATUS_NEXT_API_BATCH;
-        }
-
-        $rc = REDCap::saveData(
-            $project_id,
-            'array',
-            $updates
-        );
-
-        //return "batch size: {$batchSize}, current: {$current}, remaining: {$remaining}.";
-        return $rc['item_count'] . " record(s) marked for inclusion in the next API batch.";
-        //return print_r($rc, true);
-    }
-
-    private function updateApiBatchDatabase(){
-    
-        return "no db support yet";
     }
 
     private function getSummary(){
@@ -477,42 +466,17 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         if ( $data_source==="redcap" ){
 
-            return $this->getSummaryREDCap();
+            $io = new FIOREDCap();
         }
         else if ( $data_source==="database" ){
 
-            return $this->getSummaryDatabase();
+            $io = new FIODatabase();
         }
         else return "EM config error";
+
+        return $io->getSummary();
     }
 
-    private function getSummaryREDCap(){
-
-        $event_id = $this->getProjectSetting('fips-event');
-        $project_id = $this->getProjectId();
-
-        $sql = "
-        SELECT COUNT(*) as `summary_n`,
-            SUM(IF(IFNULL(s.`value`, 0)=0, 1, 0)) AS `summary_pending`,
-            SUM(IF(IFNULL(s.`value`, 0)=1, 1, 0)) AS `summary_apibatch`,
-            SUM(IF(IFNULL(s.`value`, 0)=2, 1, 0)) AS `summary_inprocess`,
-            SUM(IF(IFNULL(s.`value`, 0)=3, 1, 0)) AS `summary_closed`,           
-            SUM(IF(IFNULL(s.`value`, 0)=3 AND IFNULL(m.`value`, '')='Match', 1, 0)) AS `summary_closed_matched`,
-            SUM(IF(IFNULL(s.`value`, 0)=3 AND IFNULL(m.`value`, '')<>'Match', 1, 0)) AS `summary_closed_unmatched`           
-        FROM redcap_data d
-            LEFT JOIN redcap_data s ON s.project_id=d.project_id AND s.event_id=d.event_id AND s.record=d.record AND s.field_name='fips_match_status'
-            LEFT JOIN redcap_data m ON m.project_id=d.project_id AND m.event_id=d.event_id AND m.record=d.record AND m.field_name='fips_match_result'
-        WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=? AND d.`value` IS NOT NULL        
-        ";
-    
-        return Yes3::fetchRecord($sql, [$project_id, $event_id]);
-    }
-
-    private function getSummaryDatabase(){
-    
-        return "no db support yet";
-    }
-    
     /* -- API -- */
 
     private function callApi($data){
@@ -532,13 +496,15 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         }
         else if ( $data_source==="database" ){
 
-            return "No DB Yet";
+            $io = new FIODatabase();
         }
         else return "EM config error";
 
         $timestamp = Yes3::isoTimeStampString();
 
         $temp_file_name = $io->makeCsvForApiCall($record);
+
+        //return $temp_file_name;
 
         //return file_get_contents($temp_file_name);
 
@@ -570,6 +536,8 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
                 $geoData[$i]['fips_match_timestamp'] = $timestamp;
             }
         }
+
+        //return print_r($geoData, true);
 
         return $io->saveGeoData( $geoData );
     }
@@ -609,13 +577,18 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
         try {
+
             $result = curl_exec ($ch);
+
         } catch(exception $e) {
+
             curl_close($ch);
             return $e->getMessage();
         }
 
         curl_close ($ch);
+
+        //Yes3::logDebugMessage($this->getProjectId(), $result, "geocodeAddressFile");
 
         $rows = explode("\n", $result);
 
@@ -706,6 +679,37 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         return REDCap::getCopyright() . "<br />Fabulous FIPS-O-Matic &copy; 2023 CRI Web Tools LLC";
     }
 
+    public function testDb(){
+
+        $io = new FIODatabase();
+        
+        $sql = "select a.fips_linkage_id, a.fips_address_street, a.fips_address_city, a.fips_address_state, a.fips_address_zip
+        FROM fom_addresses a
+        /*WHERE a.fips_address_state = ?*/
+        ";
+
+        $params = [];
+        //$params = [ 'MN' ];
+
+        $xx = $io->dbFetchRecords($sql, $params);
+
+        $t = hrtime(true);
+        $m = 0;
+        foreach( $xx as $x){
+
+            $m++;
+        }
+        print "<p>dbFetchRecords: " . $m . " row(s) returned. time: " . strval(hrtime(true)-$t) . " nanoseconds</p>";
+
+        $t = hrtime(true);
+        $n = 0;
+        foreach( $io->dbRecordGenerator( $sql, $params) as $x ){
+
+            $n++;
+        }
+        print "<p>dbRecordGenerator: " . $n. " row(s) returned. time: " . strval(hrtime(true)-$t) . " nanoseconds</p>";
+    }
+
     /**
      * handler for the EM 'redcap_module_ajax' hook
      * 
@@ -750,6 +754,11 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         else if ($action==="save-fips-record") {
 
             return $this->saveFipsRecord( $payload );
+        }
+
+        else if ($action==="restore-fips-record") {
+
+            return $this->restoreFipsRecord( $payload );
         }
 
         else if ($action==="clear-api-batch") {

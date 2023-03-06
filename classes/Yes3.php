@@ -104,7 +104,7 @@ class Yes3 {
       return $rows;
    }
 
-   private static function sql_limit_1( $sql )
+   public static function sql_limit_1( $sql )
    {
 
       if ( stripos($sql, "LIMIT 1") === false ) {

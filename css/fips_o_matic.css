@@ -152,7 +152,7 @@ tbody#fips-editor-tbody td {
 }
 */
 tbody#fips-editor-tbody td.fips-editor-label {
-    width: 175px;
+    width: 33%;
 }
 /*
 tbody#fips-editor-tbody tr td::nth-child(2) {
@@ -180,6 +180,13 @@ tbody#fips-editor-tbody input[type=text] {
     border-color: var(--y3-background-color);
 }
 
+#yes3-container select optgroup {
+
+    font-family: var(--y3-font-family-regular);
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: var(--y3-subtle);
+}
 
 .fips-disabled {
 
@@ -191,7 +198,7 @@ tbody#fips-editor-tbody input[type=text] {
 #fips-editor-message{
 
     color: var(--y3-warning);
-    font-weight: 700;
+    font-weight: 400;
 }
 
 table#fips-summary-table > tbody > tr > td:first-child {

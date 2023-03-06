@@ -29,6 +29,10 @@
             <div class="yes3-flex-vcenter-hright">
 
                   <div class="yes3-flex-vcenter-hleft">
+                        <input type="button" class="yes3-panel-button fips-restorebutton" value="restore original" id="fips-editor-restore-button" onclick="FIPS.restoreEditorRecord()" />
+                  </div>
+
+                  <div class="yes3-flex-vcenter-hleft">
                         <input type="button" class="yes3-panel-button yes3-button-caption-save yes3-save-button fips-savebutton" id="fips-editor-save-button" onclick="FIPS.saveEditorRecord()" />
                   </div>
                                   
@@ -37,7 +41,7 @@
                   </div>
 
                   <div class="yes3-flex-vcenter-hleft">
-                        <input type="button" class="yes3-panel-button yes3-button-caption-close fips-warningbutton" onclick="FIPS.closeEditor(0)" />
+                        <input type="button" value="close editor" class="yes3-panel-button fips-warningbutton" onclick="FIPS.closeEditor(0)" />
                   </div>
             </div>
 

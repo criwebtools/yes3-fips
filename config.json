@@ -1,9 +1,9 @@
 {
-    "name": "The famous FIPS-O-MATIC",
+    "name": "The Fabulous FIPS-O-Matic",
 
     "namespace": "Yale\\Yes3Fips",
 
-    "description": "The Fabulous FIPS-O-MATIC",
+    "description": "The Fabulous FIPS-O-Matic",
 
     "prefix": "yes3_fips",
 
@@ -23,6 +23,12 @@
     ],
 
     "project-settings": [
+        {
+            "key": "allowed-user",
+            "name": "allowed user",
+            "type": "user-list",
+            "repeatable": true
+        },
         {
             "key": "data-source",
             "name": "Data source",
@@ -58,11 +64,7 @@
             "choices": [
                 {"value": "single", "name":"A single notes field"},
                 {"value": "multiple", "name":"Discrete fields for street, city, state, zip"}
-            ],
-            "branchingLogic": {
-                "field": "data-source",
-                "value": "redcap"
-            }
+            ]
         },
         {
             "key": "address-field-name", 
@@ -160,9 +162,45 @@
             "type": "text"
         },
         {
-            "key": "database-header",
-            "name": "-- sorry, database access not supported yet --",
-            "type": "descriptive",
+            "key": "api-batch-order",
+            "name": "batch assignment order",
+            "type": "radio",
+            "choices": [
+                {"value": "random", "name":"random"},
+                {"value": "record", "name":"record id"}
+            ]
+        },
+        {
+            "key": "db-host",
+            "name": "Database host",
+            "type": "text",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "database"
+            }
+        },
+        {
+            "key": "db-user",
+            "name": "Database user",
+            "type": "text",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "database"
+            }
+        },
+        {
+            "key": "db-password",
+            "name": "Database user password",
+            "type": "password",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "database"
+            }
+        },
+        {
+            "key": "db-database",
+            "name": "Database",
+            "type": "text",
             "branchingLogic": {
                 "field": "data-source",
                 "value": "database"
@@ -190,6 +228,7 @@
     "auth-ajax-actions":[
         "get-fips-records",
         "save-fips-record",
+        "restore-fips-record",
         "clear-api-batch",
         "update-api-batch",
         "call-api",

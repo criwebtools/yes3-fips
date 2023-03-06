@@ -6,6 +6,7 @@ use Exception;
 use REDCap;
 use ExternalModules\ExternalModules;
 use Yale\Yes3Fips\Yes3;
+use Yale\Yes3Fips\FIPS;
 
 class FIOREDCap implements \Yale\Yes3Fips\FIO {
 
@@ -134,12 +135,12 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
         }
     }
 
-    public function getFIPSrecords(array $data, int $limit=5000): array {
-
+    public function getFIPSrecords(string $filter, string $record, int $limit=5000): array {
+/*
         $filter = $data['filter'];
 
         $record = $data['record'];
-
+*/
         $project_id = FIPS::getProjectID();
 
         $event_id = FIPS::getProjectSetting('fips-event');
@@ -219,10 +220,40 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             $sql .= " AND f1.`value`=?";
             $params[] = FIO::MATCH_STATUS_IN_PROCESS;
         }
+        else if ( $filter==="inprocess-nomatch"){
+
+            $sql .= " AND f1.`value`=? AND f2.`value`=?";
+            $params[] = FIO::MATCH_STATUS_IN_PROCESS;
+            $params[] = FIO::MATCH_RESULT_UNMATCHED;
+        }
+        else if ( $filter==="inprocess-fuzzy"){
+
+            $sql .= " AND f1.`value`=? AND a8.`value`=?";
+            $params[] = FIO::MATCH_STATUS_IN_PROCESS;
+            $params[] = FIO::MATCH_TYPE_FUZZY;
+        }
+        else if ( $filter==="inprocess-tie"){
+
+            $sql .= " AND f1.`value`=? AND f2.`value`=?";
+            $params[] = FIO::MATCH_STATUS_IN_PROCESS;
+            $params[] = FIO::MATCH_RESULT_TIE;
+        }
         else if ( $filter==="closed"){
 
-            $sql .= " AND f1.`value`=? LIMIT {$limit}";
+            $sql .= " AND f1.`value`=?";
             $params[] = FIO::MATCH_STATUS_CLOSED;
+        }
+        else if ( $filter==="closed-matched"){
+
+            $sql .= " AND f1.`value`=? AND f2.`value`=?";
+            $params[] = FIO::MATCH_STATUS_CLOSED;
+            $params[] = FIO::MATCH_RESULT_MATCHED;
+        }
+        else if ( $filter==="closed-unmatched"){
+
+            $sql .= " AND f1.`value`=? AND f2.`value`=?";
+            $params[] = FIO::MATCH_STATUS_CLOSED;
+            $params[] = FIO::MATCH_RESULT_UNMATCHED;
         }
         else if ( $filter==="record"){
 
@@ -338,27 +369,21 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         return Yes3::fetchValue($sql, $params);
     }
 
-    public function saveFIPSrecord(array $data, string $username): string {
+    public function saveFIPSrecord(string $record, int $fips_linkage_id, array $data, int $close_editor_on_success, string $username): string {
 
         $project_id = FIPS::getProjectID();
 
         $event_id = FIPS::getProjectSetting('fips-event');
 
-        $x = $data['data'];
-
-        $record = $data['record'];
-
-        $close_editor_on_success = $data['close_editor_on_success'];
-
         // if the address is in the save set, it must be parseable
-        if ( isset($x['fips_address']) ){
+        if ( isset($data['fips_address']) && FIPS::getProjectSetting('address-field-type')==="single" ){
 
             $parsed = FIPS::singleAddressFieldParser(
-                    $x['fips_address'], 
-                    $x['fips_address_street'],
-                    $x['fips_address_city'],
-                    $x['fips_address_state'],
-                    $x['fips_address_zip']
+                    $data['fips_address'], 
+                    $data['fips_address_street'],
+                    $data['fips_address_city'],
+                    $data['fips_address_state'],
+                    $data['fips_address_zip']
             );
 
             if ( !$parsed ) {
@@ -367,14 +392,14 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             }
         }
 
-        $x['fips_save_user'] = $username;
-        $x['fips_save_timestamp'] = Yes3::isoTimeStampString();
+        $data['fips_save_user'] = $username;
+        $data['fips_save_timestamp'] = Yes3::isoTimeStampString();
 
-        $x['fips_complete'] = ( isset($x['fips_match_status']) && $x['fips_match_status'] === FIO::MATCH_STATUS_CLOSED ) ? '2':'1';
+        $data['fips_complete'] = ( isset($data['fips_match_status']) && $data['fips_match_status'] === FIO::MATCH_STATUS_CLOSED ) ? '2':'1';
 
         $saveArray = [
             $record => [
-                $event_id => $x
+                $event_id => $data
             ]
         ];
 
@@ -394,6 +419,11 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
             return ($close_editor_on_success) ? "success-and-close":"success";
         }
+    }
+    
+    public function restoreFIPSrecord(int $fips_linkage_id, string $username): string {
+
+        return "";
     }
 
     public function updateAPIbatch(): string {
@@ -600,6 +630,40 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         . "<br>{$N} addresses processed."
         . "<br>{$Nu} FIPS address record(s) updated."
         ;
+    }
+
+    public function getSummary(): array {
+
+        $event_id = FIPS::getProjectSetting('fips-event');
+
+        $project_id = FIPS::getProjectId();
+
+        $sql = "
+        SELECT COUNT(*) as `summary_n`,
+            SUM(IF(IFNULL(s.`value`, ?)=?, 1, 0)) AS `summary_pending`,
+            SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_apibatch`,
+            SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_inprocess`,
+            SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_closed`,           
+            SUM(IF(IFNULL(s.`value`, 0)=? AND IFNULL(m.`value`, '')='Match', 1, 0)) AS `summary_closed_matched`,
+            SUM(IF(IFNULL(s.`value`, 0)=? AND IFNULL(m.`value`, '')<>'Match', 1, 0)) AS `summary_closed_unmatched`           
+        FROM redcap_data d
+            LEFT JOIN redcap_data s ON s.project_id=d.project_id AND s.event_id=d.event_id AND s.record=d.record AND s.field_name='fips_match_status'
+            LEFT JOIN redcap_data m ON m.project_id=d.project_id AND m.event_id=d.event_id AND m.record=d.record AND m.field_name='fips_match_result'
+        WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=? AND d.`value` IS NOT NULL        
+        ";
     
+        $params = [ 
+            FIO::MATCH_STATUS_PENDING,
+            FIO::MATCH_STATUS_PENDING,
+            FIO::MATCH_STATUS_NEXT_API_BATCH,
+            FIO::MATCH_STATUS_IN_PROCESS,
+            FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_STATUS_CLOSED,
+            $project_id,
+            $event_id
+        ];
+
+        return Yes3::fetchRecord($sql, $params);  
     }
 }
