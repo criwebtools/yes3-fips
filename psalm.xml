@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="4"
+    phpVersion="7.4"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
+>
+    <extraFiles>
+        <directory name="/var/www/redcap.internal/redcap_v13.3.2/ExternalModules/classes" />
+    </extraFiles>
+
+    <projectFiles>
+        <file name="Yes3Fips.php" />
+        <file name="autoload.php" />
+        <directory name="classes" />
+        <directory name="pages" />
+        <directory name="assets" />
+        <directory name="/var/www/redcap.internal/redcap_*/Classes" />
+        <directory name="/var/www/redcap.internal/redcap_*/ExternalModules/classes" />
+        <ignoreFiles>
+            <directory name="vendor" />
+        </ignoreFiles>
+    </projectFiles>
+</psalm>

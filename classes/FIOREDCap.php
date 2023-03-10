@@ -369,21 +369,20 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         return Yes3::fetchValue($sql, $params);
     }
 
-    public function saveFIPSrecord(string $record, int $fips_linkage_id, array $data, int $close_editor_on_success, string $username): string {
+    public function saveFIPSrecord(string $record, int $fips_linkage_id, array $x, int $close_editor_on_success, string $username): string {
 
         $project_id = FIPS::getProjectID();
-
         $event_id = FIPS::getProjectSetting('fips-event');
 
         // if the address is in the save set, it must be parseable
-        if ( isset($data['fips_address']) && FIPS::getProjectSetting('address-field-type')==="single" ){
+        if ( isset($x['fips_address']) && FIPS::getProjectSetting('address-field-type')==="single" ){
 
             $parsed = FIPS::singleAddressFieldParser(
-                    $data['fips_address'], 
-                    $data['fips_address_street'],
-                    $data['fips_address_city'],
-                    $data['fips_address_state'],
-                    $data['fips_address_zip']
+                    $x['fips_address'], 
+                    $x['fips_address_street'],
+                    $x['fips_address_city'],
+                    $x['fips_address_state'],
+                    $x['fips_address_zip']
             );
 
             if ( !$parsed ) {
@@ -392,14 +391,14 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             }
         }
 
-        $data['fips_save_user'] = $username;
-        $data['fips_save_timestamp'] = Yes3::isoTimeStampString();
+        $x['fips_save_user'] = $username;
+        $x['fips_save_timestamp'] = Yes3::isoTimeStampString();
 
-        $data['fips_complete'] = ( isset($data['fips_match_status']) && $data['fips_match_status'] === FIO::MATCH_STATUS_CLOSED ) ? '2':'1';
+        $x['fips_complete'] = ( isset($x['fips_match_status']) && $x['fips_match_status'] === FIO::MATCH_STATUS_CLOSED ) ? '2':'1';
 
         $saveArray = [
             $record => [
-                $event_id => $data
+                $event_id => $x
             ]
         ];
 
@@ -419,6 +418,40 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
             return ($close_editor_on_success) ? "success-and-close":"success";
         }
+    }
+
+    public function archiveFIPSrecord( int $fips_linkage_id ): int {
+
+        $project_id = FIPS::getProjectID();
+        $event_id = FIPS::getProjectSetting('fips-event');
+        $id_field_name = REDCap::getRecordIdField();
+
+        $sql = "
+        select d.*
+        from redcap_data d
+          inner join redcap_data k on d.project_id=k.project_id and d.event_id=k.event_id and d.record=k.record
+          inner join redcap_metadata m on m.project_id=d.project_id and m.form_name='fips' and d.field_name=m.field_name
+        where k.project_id=? and k.event_id=? and k.field_name=? and k.value=?
+        order by m.field_order
+        ";
+
+        $params = [
+            $project_id,
+            $event_id,
+            'fips_linkage_id',
+            $fips_linkage_id
+        ];
+
+        $y = Yes3::fetchRecord($sql, $params);
+
+        if ( $fips_archive_record = Yes3::json_encode_pretty( $y ) ){
+
+            
+        }
+
+        
+
+        return 0;
     }
     
     public function restoreFIPSrecord(int $fips_linkage_id, string $username): string {
@@ -488,7 +521,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         return Yes3::fetchValue($sql, $params);
     }
 
-    public function genLinkageID( $project_id, $event_id ): string {
+    public function genLinkageID( $project_id, $event_id ): int {
 
         $linkage_id = 0;
         $n = 0;

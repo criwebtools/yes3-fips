@@ -273,30 +273,21 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         return "";
     }
 
-    public function saveFIPSrecord(string $record, int $fips_linkage_id, array $data, int $close_editor_on_success, string $username): string {
+    public function saveFIPSrecord(string $record, int $fips_linkage_id, array $x, int $close_editor_on_success, string $username): string {
 
         // archive on first save
 
-        $rc = self::archiveFIPSrecord($fips_linkage_id);
-
-        if ( is_numeric($rc) ){
-
-            $fips_history_id = $rc;
-        }
-        else {
-
-            return $rc;
-        }
+        $rc = $this->archiveFIPSrecord($fips_linkage_id);
 
         // if the address is in the save set, it must be parseable
-        if ( isset($data['fips_address']) && FIPS::getProjectSetting('address-field-type')==="single" ){
+        if ( isset($x['fips_address']) && FIPS::getProjectSetting('address-field-type')==="single" ){
 
             $parsed = FIPS::singleAddressFieldParser(
-                    $data['fips_address'], 
-                    $data['fips_address_street'],
-                    $data['fips_address_city'],
-                    $data['fips_address_state'],
-                    $data['fips_address_zip']
+                    $x['fips_address'], 
+                    $x['fips_address_street'],
+                    $x['fips_address_city'],
+                    $x['fips_address_state'],
+                    $x['fips_address_zip']
             );
 
             if ( !$parsed ) {
@@ -305,7 +296,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             }
         }
 
-        $data['fips_comment'] = self::logAction($data['fips_comment'], $username, "edited and saved");
+        $data['fips_comment'] = self::logAction($x['fips_comment'], $username, "edited and saved");
 
         $data['fips_save_user'] = $username;
         $data['fips_save_timestamp'] = Yes3::isoTimeStampString();
@@ -349,6 +340,49 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
             return ($close_editor_on_success) ? "success-and-close":"success";
         }
+    }
+
+    public function archiveFIPSrecord( int $fips_linkage_id ): int {
+
+        // first see if it's already been archived
+
+        if ($fips_history_id = self::dbFetchValue("SELECT fips_history_id FROM fom_addresses_history WHERE fips_linkage_id=? LIMIT 1", [$fips_linkage_id])){
+
+            return intval($fips_history_id);
+        }
+
+        $x = self::dbFetchRecord("SELECT * FROM fom_addresses WHERE fips_linkage_id=? LIMIT 1", [$fips_linkage_id]);
+
+        if ( !is_array($x) ){
+
+            return -1;
+        }
+
+        $fieldList = "`fips_history_datetime`";
+
+        $valueList = "?";
+
+        $params = [ Yes3::isoTimeStampString() ];
+
+        foreach($x as $colname=>$value){
+
+            $fieldList .= ", `" . $colname . "`";
+
+            $valueList .= ", ?";
+
+            $params[] = $value;
+        }
+
+        $sql = "INSERT INTO fom_addresses_history ({$fieldList}) VALUES ({$valueList})";
+
+        $fips_history_id = self::dbQuery( $sql, $params, self::QRY_RETURN_INSERT_ID );
+
+        $sql = "UPDATE fom_addresses SET fips_history_id=? WHERE fips_linkage_id=? LIMIT 1";
+        $params = [$fips_history_id, $fips_linkage_id];
+
+        $rc = self::dbQuery($sql, $params, self::QRY_RETURN_ROWS_AFFECTED);
+
+        return intval($fips_history_id);
     }
     
     public function restoreFIPSrecord(int $fips_linkage_id, string $username): string {
@@ -412,49 +446,6 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         }
 
         return $log . "[{$timestamp}]({$username}): {$action}.";
-    }
-
-    private static function archiveFIPSrecord( int $fips_linkage_id ) {
-
-        // first see if it's already been archived
-
-        if ($fips_history_id = self::dbFetchValue("SELECT fips_history_id FROM fom_addresses_history WHERE fips_linkage_id=? LIMIT 1", [$fips_linkage_id])){
-
-            return $fips_history_id;
-        }
-
-        $x = self::dbFetchRecord("SELECT * FROM fom_addresses WHERE fips_linkage_id=? LIMIT 1", [$fips_linkage_id]);
-
-        if ( !is_array($x) ){
-
-            return -1;
-        }
-
-        $fieldList = "`fips_history_datetime`";
-
-        $valueList = "?";
-
-        $params = [ Yes3::isoTimeStampString() ];
-
-        foreach($x as $colname=>$value){
-
-            $fieldList .= ", `" . $colname . "`";
-
-            $valueList .= ", ?";
-
-            $params[] = $value;
-        }
-
-        $sql = "INSERT INTO fom_addresses_history ({$fieldList}) VALUES ({$valueList})";
-
-        $fips_history_id = self::dbQuery( $sql, $params, self::QRY_RETURN_INSERT_ID );
-
-        $sql = "UPDATE fom_addresses SET fips_history_id=? WHERE fips_linkage_id=? LIMIT 1";
-        $params = [$fips_history_id, $fips_linkage_id];
-
-        $rc = self::dbQuery($sql, $params, self::QRY_RETURN_ROWS_AFFECTED);
-
-        return $fips_history_id;
     }
 
     public function updateAPIbatch(): string {

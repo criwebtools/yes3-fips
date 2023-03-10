@@ -418,7 +418,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         }
         return $io->saveFIPSrecord(
             $params['record'],
-            $params['fips_linkage_id'],
+            intval($params['fips_linkage_id']),
             $params['data'], 
             $params['close_editor_on_success'], 
             $this->getUser()->getUsername()
@@ -438,7 +438,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
             $io = new FIODatabase();
         }
         return $io->restoreFIPSrecord(
-            $params['fips_linkage_id'], 
+            intval($params['fips_linkage_id']), 
             $this->getUser()->getUsername()
         );
     }

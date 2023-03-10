@@ -110,9 +110,9 @@ class FIPS {
      * @param mixed $city 
      * @param mixed $state 
      * @param mixed $zip 
-     * @return void 
+     * @return bool 
      */
-    static function singleAddressFieldParser($address, &$street, &$city, &$state, &$zip){
+    static function singleAddressFieldParser($address, &$street, &$city, &$state, &$zip): bool{
 
         $states = [
             ['name' => 'ALABAMA',              'abbrev' => 'AL'],
@@ -208,12 +208,13 @@ class FIPS {
             }
             else {
         
-                for ($s=0; $s<count($states); $s++){
+                foreach($states as $s){
         
                     $matchtext = [];
-                    if ( !$i = preg_match("/[, ]{$states[$s]['abbrev']}[, ]/i", $address_line, $matchtext) ) {
+                
+                    if ( !$i = preg_match("/[, ]{$s['abbrev']}[, ]/i", $address_line, $matchtext) ) {
 
-                        $i = preg_match("/[, ]{$states[$s]['name']}[, ]/i", $address_line, $matchtext);
+                        $i = preg_match("/[, ]{$s['name']}[, ]/i", $address_line, $matchtext);
                     }
         
                     if ( $i ){
@@ -221,7 +222,7 @@ class FIPS {
                         $j = stripos($address_line, $matchtext[0]);
         
                         $city = trim(substr($address_line, 0, $j), " ,\n\r\t\v\x00");
-                        $state = $states[$s]['abbrev'];
+                        $state = $s['abbrev'];
                         $zip = trim(substr($address_line, $j+strlen($matchtext[0])),  " ,\n\r\t\v\x00");
                         break;
                     }

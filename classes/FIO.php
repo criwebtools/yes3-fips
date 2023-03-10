@@ -48,6 +48,8 @@ interface FIO
     public function getLinkageIdFromStudyId(string $studyId): string;
     
     public function saveFIPSrecord(string $record, int $fips_linkage_id, array $x, int $close_editor_on_success, string $username): string;
+
+    public function archiveFIPSrecord( int $fips_linkage_id ): int;
     
     public function restoreFIPSrecord(int $fips_linkage_id, string $username): string;
 
