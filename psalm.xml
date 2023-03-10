@@ -50,6 +50,9 @@
     <projectFiles>
         <file name="Yes3Fips.php" />
         <file name="autoload.php" />
+        <directory name="css" />
+        <directory name="js" />
+        <directory name="html" />
         <directory name="classes" />
         <directory name="pages" />
         <directory name="assets" />
