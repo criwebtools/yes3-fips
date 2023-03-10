@@ -8,10 +8,6 @@
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     findUnusedBaselineEntry="true"
 >
-    <extraFiles>
-        <directory name="/var/www/redcap.internal/redcap_v13.3.2/ExternalModules/classes" />
-    </extraFiles>
-
     <issueHandlers>
 
         <MissingPropertyType errorLevel="suppress" />
