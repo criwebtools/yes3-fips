@@ -53,8 +53,6 @@
         <directory name="classes" />
         <directory name="pages" />
         <directory name="assets" />
-        <directory name="/var/www/redcap.internal/redcap_*/Classes" />
-        <directory name="/var/www/redcap.internal/redcap_*/ExternalModules/classes" />
         <ignoreFiles>
             <directory name="vendor" />
         </ignoreFiles>
