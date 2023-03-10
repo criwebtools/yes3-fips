@@ -291,7 +291,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         $xx =  Yes3::fetchRecords( $sql, $params );
 
         // perform a 'natural sort' on the result
-        upsort( $xx, function($a, $b){ return strnatcmp($a['record'], $b['record']); });
+        usort( $xx, function($a, $b){ return strnatcmp($a['record'], $b['record']); });
 
         return $xx;
     }
