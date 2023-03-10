@@ -5,6 +5,8 @@
 
     "description": "The Fabulous FIPS-O-Matic",
 
+    "documentation": "https://github.com/criwebtools/yes3-fips#readme",
+
     "prefix": "yes3_fips",
 
     "authors": [

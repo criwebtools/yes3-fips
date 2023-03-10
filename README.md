@@ -1,4 +1,4 @@
-# yes3-fips
+# The Fabulous FIPS-O-Matic
 
 ![Psalm Static Analysis](https://github.com/yale-redcap/yes3-exporter/actions/workflows/psalm-static.yml/badge.svg)
 ![Psalm Security Scan](https://github.com/yale-redcap/yes3-exporter/actions/workflows/psalm-security.yml/badge.svg)
