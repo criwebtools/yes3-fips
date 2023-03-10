@@ -309,6 +309,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
         $n = 0;
         $data = [];
+        $u = "";
 
         foreach(Yes3::recordGenerator($sql, $params) as $x){
 

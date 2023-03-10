@@ -296,10 +296,10 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             }
         }
 
-        $data['fips_comment'] = self::logAction($x['fips_comment'], $username, "edited and saved");
+        $x['fips_comment'] = self::logAction($x['fips_comment'], $username, "edited and saved");
 
-        $data['fips_save_user'] = $username;
-        $data['fips_save_timestamp'] = Yes3::isoTimeStampString();
+        $x['fips_save_user'] = $username;
+        $x['fips_save_timestamp'] = Yes3::isoTimeStampString();
 
         //$data['fips_complete'] = ( isset($data['fips_match_status']) && $data['fips_match_status'] === FIO::MATCH_STATUS_CLOSED ) ? '2':'1';
 
@@ -307,7 +307,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
         $params = [];
         $nP = 0;
-        foreach($data as $colname=>$value){
+        foreach($x as $colname=>$value){
 
             if ( $nP ) {
 

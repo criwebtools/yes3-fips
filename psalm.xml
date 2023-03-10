@@ -12,6 +12,44 @@
         <directory name="/var/www/redcap.internal/redcap_v13.3.2/ExternalModules/classes" />
     </extraFiles>
 
+    <issueHandlers>
+
+        <MissingPropertyType errorLevel="suppress" />
+
+        <MissingReturnType errorLevel="suppress" />
+
+        <MissingParamType errorLevel="suppress" />
+
+        <MissingDependency errorLevel="info" />
+
+        <UndefinedConstant errorLevel="info" />
+
+        <UnusedVariable errorLevel="info" />
+
+        <UndefinedFunction>
+            <errorLevel type="suppress">
+                <referencedFunction name="Yale\Yes3Fips\db_real_escape_string" />
+            </errorLevel>
+        </UndefinedFunction>
+        
+        <UndefinedMethod>
+            <errorLevel type="suppress">
+                <referencedMethod name="Yale\Yes3Fips\Yes3Fips::getUrl" />
+                <referencedMethod name="Yale\Yes3Fips\Yes3Fips::getModulePath" />
+                <referencedMethod name="Yale\Yes3Fips\Yes3Fips::getModuleDirectoryName" />
+            </errorLevel>
+        </UndefinedMethod>
+
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="ExternalModules\AbstractExternalModule" />
+                <referencedClass name="ExternalModules\ExternalModules" />
+                <referencedClass name="REDCap" />
+            </errorLevel>
+        </UndefinedClass>
+
+    </issueHandlers>
+
     <projectFiles>
         <file name="Yes3Fips.php" />
         <file name="autoload.php" />
