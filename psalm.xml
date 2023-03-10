@@ -42,6 +42,7 @@
 
         <UndefinedClass>
             <errorLevel type="suppress">
+                <referencedClass name="Yale\Yes3Fips\Yes3Fips" />
                 <referencedClass name="ExternalModules\AbstractExternalModule" />
                 <referencedClass name="ExternalModules\ExternalModules" />
                 <referencedClass name="REDCap" />
