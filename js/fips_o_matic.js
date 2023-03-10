@@ -206,7 +206,7 @@ FIPS.getTheList = function(){
     );
 }
 
-FIPS.populateTheList = function( response ){
+FIPS.porpulateTheList = function( response ){
 
     console.log( 'populateTheList', response );
 
