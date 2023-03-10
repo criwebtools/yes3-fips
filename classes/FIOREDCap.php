@@ -277,7 +277,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         else if ( $filter==="matched"){
 
             $sql .= " AND f2.`value`=?";
-            $params[] = FIO::MATCH_RESULT_MATCHED;
+            $params() = FIO::MATCH_RESULT_MATCHED; 
         }
         else {
 
