@@ -35,7 +35,7 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
             , a2.`value` AS `fips_address_street`
             , a3.`value` AS `fips_address_city`
             , a4.`value` AS `fips_address_state`
-            , a5.`value` AS `fips_address_zip`
+            , SUBSTRING(a5.`value`, 1, 5) AS `fips_address_zip`
         FROM redcap_data k
             LEFT JOIN redcap_data ms ON ms.project_id=k.project_id AND ms.event_id=k.event_id AND ms.`record`=k.`record` AND ms.field_name='fips_match_status'
             LEFT JOIN redcap_data a2 ON a2.project_id=k.project_id AND a2.event_id=k.event_id AND a2.`record`=k.`record` AND a2.field_name='fips_address_street'
@@ -151,7 +151,9 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
         }
 
         $sql = "
-SELECT d.`record`, d.`value` AS `fips_address_timestamp`
+SELECT d.`record`
+    , d.`value` AS `fips_address_timestamp`
+	, IFNULL(f0.`value`, '') AS fips_linkage_id
 	, IFNULL(f1.`value`, '') AS fips_match_status
 	, IFNULL(f2.`value`, '') AS fips_match_result
  	, IFNULL(f3.`value`, '') AS fips_code
@@ -160,6 +162,7 @@ SELECT d.`record`, d.`value` AS `fips_address_timestamp`
 	, IFNULL(f6.`value`, '') AS fips_tract
 	, IFNULL(f7.`value`, '') AS fips_block
 	, IFNULL(a1.`value`, '') AS fips_address
+	, IFNULL(h1.`value`, '') AS fips_source_address_history
 	, IFNULL(a2.`value`, '') AS fips_address_street
 	, IFNULL(a3.`value`, '') AS fips_address_city
 	, IFNULL(a4.`value`, '') AS fips_address_state
@@ -175,6 +178,7 @@ SELECT d.`record`, d.`value` AS `fips_address_timestamp`
 
 FROM redcap_data d
 
+    LEFT JOIN redcap_data f0 ON f0.project_id=d.project_id AND f0.event_id=d.event_id AND f0.`record`=d.`record` AND f0.field_name='fips_linkage_id'
     LEFT JOIN redcap_data f1 ON f1.project_id=d.project_id AND f1.event_id=d.event_id AND f1.`record`=d.`record` AND f1.field_name='fips_match_status'
     LEFT JOIN redcap_data f2 ON f2.project_id=d.project_id AND f2.event_id=d.event_id AND f2.`record`=d.`record` AND f2.field_name='fips_match_result'
     LEFT JOIN redcap_data f3 ON f3.project_id=d.project_id AND f3.event_id=d.event_id AND f3.`record`=d.`record` AND f3.field_name='fips_code'
@@ -183,6 +187,7 @@ FROM redcap_data d
     LEFT JOIN redcap_data f6 ON f6.project_id=d.project_id AND f6.event_id=d.event_id AND f6.`record`=d.`record` AND f6.field_name='fips_tract'
     LEFT JOIN redcap_data f7 ON f7.project_id=d.project_id AND f7.event_id=d.event_id AND f7.`record`=d.`record` AND f7.field_name='fips_block'
     LEFT JOIN redcap_data a1 ON a1.project_id=d.project_id AND a1.event_id=d.event_id AND a1.`record`=d.`record` AND a1.field_name='fips_address'
+    LEFT JOIN redcap_data h1 ON h1.project_id=d.project_id AND h1.event_id=d.event_id AND h1.`record`=d.`record` AND h1.field_name='fips_source_address_history'
     LEFT JOIN redcap_data a2 ON a2.project_id=d.project_id AND a2.event_id=d.event_id AND a2.`record`=d.`record` AND a2.field_name='fips_address_street'
     LEFT JOIN redcap_data a3 ON a3.project_id=d.project_id AND a3.event_id=d.event_id AND a3.`record`=d.`record` AND a3.field_name='fips_address_city'
     LEFT JOIN redcap_data a4 ON a4.project_id=d.project_id AND a4.event_id=d.event_id AND a4.`record`=d.`record` AND a4.field_name='fips_address_state'

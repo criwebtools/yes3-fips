@@ -213,6 +213,12 @@
     "links": {
         "project": [
             {
+                "name": "Workshop",
+                "icon": "fas fa-gear",
+                "url":  "pages/workshop.php",
+                "show-header-and-footer": true
+            },
+            {
                 "name": "FOM: import addresses",
                 "icon": "fas fa-gear",
                 "url":  "pages/update_addresses.php",
