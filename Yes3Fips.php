@@ -58,7 +58,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         ],
 
         [ "field_name"=>"fips_address",  "type"=>"textarea", "label"=>"address", "editable"=>FIO::IF_SINGLE_ADDRESS_FIELD, "display"=>FIO::IF_SINGLE_ADDRESS_FIELD, "size"=>100 ],
-        [ "field_name"=>"fips_source_address_history",  "type"=>"textarea", "label"=>"source address history", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_source_address_history",  "type"=>"textarea", "label"=>"source address history", "editable"=>FIO::NEVER, "display"=>FIO::IF_SINGLE_ADDRESS_FIELD, "size"=>100 ],
 
         [ "field_name"=>"fips_address_street","type"=>"textarea", "label"=>"Street", "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_address_city",  "type"=>"text", "label"=>"City",   "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
@@ -83,9 +83,9 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ]
 
-        [ "field_name"=>"fips_history_id", "type"=>"text", "label"=>"archive id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+        //, [ "field_name"=>"fips_history_id", "type"=>"text", "label"=>"archive id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
         
     ];
 
