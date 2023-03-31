@@ -63,6 +63,11 @@ $copy = $module->getCopyright();
                             <option value="closed-unmatched">closed: not matched</option>
                         </optgroup>
 
+                        <optgroup label='set aside'>
+                            <option value="deferred-pobox">PO box</option>
+                            <option value="deferred-later">Deferred</option>
+                        </optgroup>
+
                         <optgroup label='other filters'>
                             <option value="record">a single record</option>
                             <option value="all">all records</option>

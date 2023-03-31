@@ -172,6 +172,16 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             $sql .= " WHERE `fips_match_status`=?";
             $params[] = self::MATCH_STATUS_IN_PROCESS;
         }
+        else if ( $filter==="deferred-pobox"){
+
+            $sql .= " WHERE `fips_match_status`=?";
+            $params[] = self::MATCH_STATUS_PO_BOX;
+        }
+        else if ( $filter==="deferred-later"){
+
+            $sql .= " WHERE `fips_match_status`=?";
+            $params[] = self::MATCH_STATUS_DEFERRED;
+        }
         else if ( $filter==="inprocess-nomatch"){
 
             $sql .= " WHERE `fips_match_status`=? AND `fips_match_result`=?";

@@ -12,6 +12,8 @@ interface FIO
     public const MATCH_STATUS_NEXT_API_BATCH = '1';
     public const MATCH_STATUS_IN_PROCESS = '2';
     public const MATCH_STATUS_CLOSED = '3';
+    public const MATCH_STATUS_PO_BOX = '11';
+    public const MATCH_STATUS_DEFERRED = '12';
 
     public const DEFAULT_API_BATCH_SIZE = 50;
 

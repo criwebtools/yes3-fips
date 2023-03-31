@@ -225,6 +225,16 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             $sql .= " AND f1.`value`=?";
             $params[] = FIO::MATCH_STATUS_IN_PROCESS;
         }
+        else if ( $filter==="deferred-pobox"){
+
+            $sql .= " AND f1.`value`=?";
+            $params[] = FIO::MATCH_STATUS_PO_BOX;
+        }
+        else if ( $filter==="deferred-later"){
+
+            $sql .= " AND f1.`value`=?";
+            $params[] = FIO::MATCH_STATUS_DEFERRED;
+        }
         else if ( $filter==="inprocess-nomatch"){
 
             $sql .= " AND f1.`value`=? AND f2.`value`=?";

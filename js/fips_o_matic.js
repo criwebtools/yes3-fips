@@ -1,6 +1,7 @@
 const FIPS = {
 
-    'fips_match_status_labels': ['Pending', 'Next API Batch', 'In Process', 'Closed'],
+    'fips_match_status_labels': ['Pending', 'Next API Batch', 'In Process', 'Closed', '4', '5', '6', '7', '8', '9', '0',
+                                 'PO Box', 'Deferred'],
 
     'summary': {
         n:0,

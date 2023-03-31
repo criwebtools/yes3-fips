@@ -21,31 +21,6 @@ use Yale\Yes3Fips\FIODbConnection;
 
 class Yes3Fips extends \ExternalModules\AbstractExternalModule
 {
-    // low rent dd for FIPS form
-    public $fips_form = [
-        'form_name' => 'fips',
-        "fips_linkage_id" => "fips_linkage_id",
-        "fips_address" => "fips_address",
-        "fips_address_street" => "fips_address_street",
-        "fips_address_city" => "fips_address_city",
-        "fips_address_state" => "fips_address_state",
-        "fips_address_updated" => "fips_address_updated",
-        "fips_address_zip" => "fips_address_zip",
-        "fips_code" => "fips_code",
-        "fips_address_timestamp" => "fips_address_timestamp",
-        "fips_state" => "fips_state",
-        "fips_county" => "fips_county",
-        "fips_tract" => "fips_tract",
-        "fips_block" => "fips_block",
-        "fips_match_result" => "fips_match_result",
-        "fips_match_status" => "fips_match_status",
-        "fips_match_timestamp" => "fips_match_timestamp",
-        "fips_batch_user" => "fips_batch_user",
-        "fips_save_timestamp" => "fips_save_timestamp",
-        "fips_save_user" => "fips_save_user",
-        "fips_comment" => "fips_comment"
-    ];
-
     public $fips_editor_fields = [
 
         [ "field_name"=>"fips_match_status", "type"=>"select", "label"=>"status", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50, 
@@ -53,7 +28,9 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
                 ["value"=>FIO::MATCH_STATUS_PENDING, "label"=>"Pending"],
                 ["value"=>FIO::MATCH_STATUS_NEXT_API_BATCH, "label"=>"Next API batch"],
                 ["value"=>FIO::MATCH_STATUS_IN_PROCESS, "label"=>"In process"],
-                ["value"=>FIO::MATCH_STATUS_CLOSED, "label"=>"Closed"]
+                ["value"=>FIO::MATCH_STATUS_CLOSED, "label"=>"Closed"],
+                ["value"=>FIO::MATCH_STATUS_PO_BOX, "label"=>"PO Box"],
+                ["value"=>FIO::MATCH_STATUS_DEFERRED, "label"=>"Deferred"]
             ]
         ],
 
