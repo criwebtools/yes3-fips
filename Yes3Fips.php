@@ -10,6 +10,7 @@ require "autoload.php";
 
 use Exception;
 use REDCap;
+use mysqli;
 use stdClass;
 
 use Yale\Yes3Fips\Yes3;
@@ -18,6 +19,8 @@ use Yale\Yes3Fips\FIPS;
 use Yale\Yes3Fips\FIO;
 use Yale\Yes3Fips\FIOREDCap;
 use Yale\Yes3Fips\FIODbConnection;
+
+//$fips_db_conn = new stdClass;
 
 class Yes3Fips extends \ExternalModules\AbstractExternalModule
 {
@@ -60,7 +63,10 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ]
+        [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+
+        [ "field_name"=>"fom_archive_timestamp", "type"=>"text", "label"=>"Archive timestamp", "editable"=>FIO::NEVER, "display"=>FIO::IF_SOURCE_DATABASE, "size"=>50 ],
+        [ "field_name"=>"fom_archive", "type"=>"textarea", "label"=>"Archived record", "editable"=>FIO::NEVER, "display"=>FIO::IF_SOURCE_DATABASE, "size"=>100 ]
 
         //, [ "field_name"=>"fips_history_id", "type"=>"text", "label"=>"archive id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
         
@@ -72,12 +78,44 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
     function __construct()
     {
+        global $fips_db_conn;
+
         parent::__construct();
 
         if ( $this->getProjectId() ){
 
+            if ( $this->getProjectSetting('data-source')==="database" ){
+
+                //$this->initializeDBO();
+            }
+
             $this->settings['address_field_type'] = $this->getProjectSetting('address-field-type');
         }
+    }
+
+    function initializeDBO()
+    {
+        //global $fips_db_conn;
+        Yes3::logDebugMessage(0, 'initializeDBO invoked', 'Yes3Fips');
+
+        $host = ""; $user = ""; $password = ""; $database = "";
+
+        $specfile = FIPS::getProjectSetting('db-spec-file');
+
+        require $specfile; // connection info, hopefully store off webroot
+
+        $db_conn = new mysqli($host, $user, $password, $database);
+
+        $GLOBALS['fips_db_conn'] = $db_conn;
+
+        if ($db_conn->connect_errno) {
+            Yes3::logDebugMessage(0, $db_conn->connect_error, 'Yes3Fips:connection error');
+            throw new Exception("Failed to connect to MySQL: (" . $db_conn->connect_errno . ") " . $db_conn->connect_error);
+        }
+                
+        Yes3::logDebugMessage(0, 'Db connection established', 'Yes3Fips');
+
+        Yes3::logDebugMessage(0, print_r($GLOBALS, true), 'Yes3Fips: globals');
     }
 
     function hiMom(){

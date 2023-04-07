@@ -3,11 +3,9 @@
 namespace Yale\Yes3Fips;
 
 use Exception;
-use REDCap;
-use ExternalModules\ExternalModules;
+use mysqli;
 use Yale\Yes3Fips\Yes3;
 use Yale\Yes3Fips\FIPS;
-use Yale\Yes3Fips\FIODbConnection;
 
 class FIODatabase implements \Yale\Yes3Fips\FIO {
 
@@ -19,7 +17,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
         if ( $record ){
 
-            $where = "fom_idmap.`record`=?";
+            $where = "fom_crosswalk.`record`=?";
             $params[] = $record;
         }
         else {
@@ -36,7 +34,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             , fom_addresses.`fips_address_state`
             , fom_addresses.`fips_address_zip`
         FROM fom_addresses
-            INNER JOIN fom_idmap ON fom_addresses.fips_linkage_id=fom_idmap.fips_linkage_id
+            INNER JOIN fom_crosswalk ON fom_addresses.fips_linkage_id=fom_crosswalk.fips_linkage_id
         WHERE {$where}
         ";
 
@@ -68,11 +66,16 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         for($i=0; $i<count($yy); $i++){
 
             $yy[$i]['fips_address_street'] = Yes3::inoffensiveText($yy[$i]['fips_address_street'], 8096, true);
+            $yy[$i]['fips_address_city'] = Yes3::inoffensiveText($yy[$i]['fips_address_city'], 8096, true);
+            $yy[$i]['fips_address_state'] = Yes3::inoffensiveText($yy[$i]['fips_address_state'], 8096, true);
+            $yy[$i]['fips_address_zip'] = Yes3::inoffensiveText($yy[$i]['fips_address_zip'], 8096, true);
 
             fputcsv($fp, $yy[$i]);
         }
 
         fclose($fp);
+
+        //Yes3::logDebugMessage(0, file_get_contents( $temp_file_name ), "makeCsvForApiCall:file" );
 
         //return print_r($yy, true);
         //return file_get_contents( $temp_file_name );
@@ -81,6 +84,8 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
     }
 
     public function saveGeoData(array $geoData): string {
+
+        //return print_r($geoData, true);
 
         $n = 0;
         $nMatchedExact = 0;
@@ -143,7 +148,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         return "API call succeeded.<br>{$n} record(s) processed.<br>{$nMatchedExact} exact match(es).<br>{$nMatchedNonExact} fuzzy match(es).<br>{$nUnmatched} not matched.";
     }
 
-    public function getFIPSrecords(string $filter, string $record, int $limit=5000): array {
+    public function getFIPSrecords(string $filter, string $record, int $limit=10000): array {
 
         if ( $record ){
 
@@ -152,9 +157,9 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
         $params = [];
 
-        $sql = "SELECT fom_addresses.*, fom_idmap.record
+        $sql = "SELECT fom_addresses.*, fom_crosswalk.record
         FROM fom_addresses
-          INNER JOIN fom_idmap ON fom_addresses.fips_linkage_id=fom_idmap.fips_linkage_id";
+          INNER JOIN fom_crosswalk ON fom_addresses.fips_linkage_id=fom_crosswalk.fips_linkage_id";
 
         if ( $filter==="pending"){
 
@@ -246,6 +251,9 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             return [];
         }
 
+        Yes3::logDebugMessage(0, $sql, "getFIPSrecords:sql");
+        Yes3::logDebugMessage(0, print_r($params, true), "getFIPSrecords:params");
+
         //return $sql;
 
         $sql .= " LIMIT ?";
@@ -283,6 +291,21 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         return "";
     }
 
+    public static function getFipsComment( $fips_linkage_id ){
+
+        $fips_comment = self::dbFetchValue(
+            "SELECT fips_comment FROM fom_addresses WHERE fips_linkage_id=?",
+            [$fips_linkage_id]
+        );
+        
+        if ( !$fips_comment ){
+
+            $fips_comment = "";
+        }
+
+        return $fips_comment;
+    }
+
     public function saveFIPSrecord(string $record, int $fips_linkage_id, array $x, int $close_editor_on_success, string $username): string {
 
         // archive on first save
@@ -306,7 +329,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             }
         }
 
-        $x['fips_comment'] = self::logAction($x['fips_comment'], $username, "edited and saved");
+        $x['fips_comment'] = self::logAction(self::getFipsComment($fips_linkage_id), $username, "edited and saved");
 
         $x['fips_save_user'] = $username;
         $x['fips_save_timestamp'] = Yes3::isoTimeStampString();
@@ -356,54 +379,39 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
         // first see if it's already been archived
 
-        if ($fips_history_id = self::dbFetchValue("SELECT fips_history_id FROM fom_addresses_history WHERE fips_linkage_id=? LIMIT 1", [$fips_linkage_id])){
+        if ($fom_archive_timestamp = self::dbFetchValue("SELECT fom_archive_timestamp FROM fom_addresses WHERE fips_linkage_id=?", [$fips_linkage_id])){
 
-            return intval($fips_history_id);
+            return $fom_archive_timestamp;
         }
 
-        $x = self::dbFetchRecord("SELECT * FROM fom_addresses WHERE fips_linkage_id=? LIMIT 1", [$fips_linkage_id]);
+        $fom_archive_timestamp = Yes3::isoTimeStampString();
 
-        if ( !is_array($x) ){
+        $x = self::dbFetchRecord("SELECT * FROM fom_addresses WHERE fips_linkage_id=?", [$fips_linkage_id]);
 
-            return -1;
-        }
+        $params = [ $fom_archive_timestamp, json_encode($x, JSON_PRETTY_PRINT), $fips_linkage_id ];
 
-        $fieldList = "`fips_history_datetime`";
-
-        $valueList = "?";
-
-        $params = [ Yes3::isoTimeStampString() ];
-
-        foreach($x as $colname=>$value){
-
-            $fieldList .= ", `" . $colname . "`";
-
-            $valueList .= ", ?";
-
-            $params[] = $value;
-        }
-
-        $sql = "INSERT INTO fom_addresses_history ({$fieldList}) VALUES ({$valueList})";
-
-        $fips_history_id = self::dbQuery( $sql, $params, self::QRY_RETURN_INSERT_ID );
-
-        $sql = "UPDATE fom_addresses SET fips_history_id=? WHERE fips_linkage_id=? LIMIT 1";
-        $params = [$fips_history_id, $fips_linkage_id];
+        $sql = "UPDATE fom_addresses SET fom_archive_timestamp=?, fom_archive=? WHERE fips_linkage_id=?";
 
         $rc = self::dbQuery($sql, $params, self::QRY_RETURN_ROWS_AFFECTED);
 
-        return intval($fips_history_id);
+        return $fom_archive_timestamp;
     }
     
     public function restoreFIPSrecord(int $fips_linkage_id, string $username): string {
 
-        $sql = "SELECT * FROM fom_addresses_history WHERE fips_linkage_id=? LIMIT 1";
+        $sql = "SELECT fom_archive FROM fom_addresses WHERE fips_linkage_id=?";
 
-        $x = self::dbFetchRecord($sql, [ $fips_linkage_id ]);
+        $json = self::dbFetchValue($sql, [ $fips_linkage_id ]);
 
-        $fips_comment = self::dbFetchValue("SELECT fips_comment FROM fom_addresses WHERE fips_linkage_id=? LIMIT 1", [$fips_linkage_id]);
+        if ( !Yes3::is_json_decodable($json) ) {
 
-        $x['fips_comment'] = self::logAction($fips_comment, $username, "restored from archive");
+            return "no archive exists";
+            //return $json;
+        }
+
+        $x = json_decode($json, true);
+
+        $x['fips_comment'] = self::logAction(self::getFipsComment($fips_linkage_id), $username, "restored");
 
         $sql = "UPDATE fom_addresses SET ";
 
@@ -411,7 +419,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         $nP = 0;
         foreach($x as $colname=>$value){
 
-            if ( !in_array($colname, ['fips_linkage_id', 'fips_history_id', 'fips_history_datetime']) ){
+            if ( !in_array($colname, ['fips_linkage_id', 'fom_archive', 'fom_archive_timestamp']) ){
 
                 if ( $nP ) {
 
@@ -446,7 +454,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
         $timestamp = Yes3::isoTimeStampString();
 
-        if ( $log ){
+        if ( strlen($log) > 0 ){
 
             $log .= "\n";
         }
@@ -476,12 +484,11 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
         $orderBy = ( FIPS::getProjectSetting('api-batch-order')==="random" ) ? "RAND()" : "d.`record`";
 
-        // batches are order by studyid, in case that would be useful
         $sql = "
         UPDATE fom_addresses a 
         INNER JOIN (
           SELECT c.fips_linkage_id FROM fom_addresses c
-            INNER JOIN fom_idmap d ON d.fips_linkage_id=c.fips_linkage_id
+            INNER JOIN fom_crosswalk d ON d.fips_linkage_id=c.fips_linkage_id
           WHERE IFNULL(c.fips_match_status, 0) < ?
           ORDER BY {$orderBy}
           LIMIT ?
@@ -504,6 +511,8 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             SUM(IF(IFNULL(`fips_match_status`, ?)=?, 1, 0)) AS `summary_pending`,
             SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_apibatch`,
             SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_inprocess`,
+            SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_pobox`,
+            SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_deferred`,
             SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_closed`,           
             SUM(IF(IFNULL(`fips_match_status`, 0)=? AND IFNULL(`fips_match_result`, '')='Match', 1, 0)) AS `summary_closed_matched`,
             SUM(IF(IFNULL(`fips_match_status`, 0)=? AND IFNULL(`fips_match_result`, '')<>'Match', 1, 0)) AS `summary_closed_unmatched` 
@@ -511,24 +520,58 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         ";
 
         $params = [ 
-            self::MATCH_STATUS_PENDING,
-            self::MATCH_STATUS_PENDING,
-            self::MATCH_STATUS_NEXT_API_BATCH,
-            self::MATCH_STATUS_IN_PROCESS,
-            self::MATCH_STATUS_CLOSED,
-            self::MATCH_STATUS_CLOSED,
-            self::MATCH_STATUS_CLOSED
+            FIO::MATCH_STATUS_PENDING,
+            FIO::MATCH_STATUS_PENDING,
+            FIO::MATCH_STATUS_NEXT_API_BATCH,
+            FIO::MATCH_STATUS_IN_PROCESS,
+            FIO::MATCH_STATUS_PO_BOX,
+            FIO::MATCH_STATUS_DEFERRED,
+            FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_STATUS_CLOSED
         ];
 
         return self::dbFetchRecord($sql, $params);
     }
 
+    private static function getConn()
+    {
+        $host = ""; $user = ""; $password = ""; $database = "";
+
+        $specfile = FIPS::getProjectSetting('db-spec-file');
+        
+        require $specfile; // connection info, hopefully store off webroot
+
+        $db_conn = new mysqli($host, $user, $password, $database);
+
+        if ( $db_conn->connect_errno) {
+
+            Yes3::logDebugMessage(0,  $db_conn->connect_error, 'FIODbConnection');
+            throw new Exception("Failed to connect to MySQL: (" .  $db_conn->connect_errno . ") " .  $db_conn->connect_error);
+        }
+
+        return $db_conn;
+    }
+
     public static function dbQuery($sql, $params=[], $returnType=self::QRY_RETURN_RETCODE)
     {
- 
-        $conn = FIODbConnection::getConn();
+        //$db_conn = self::getConn();
 
-        if ( $stmt = $conn->prepare($sql) ) {
+        $host = ""; $user = ""; $password = ""; $database = "";
+
+        $specfile = FIPS::getProjectSetting('db-spec-file');
+        
+        require $specfile; // connection info, hopefully store off webroot
+
+        $db_conn = new mysqli($host, $user, $password, $database);
+
+        if ( $db_conn->connect_errno) {
+
+            //Yes3::logDebugMessage(0,  $db_conn->connect_error, 'FIODbConnection');
+            throw new Exception("Failed to connect to MySQL: (" .  $db_conn->connect_errno . ") " .  $db_conn->connect_error);
+        }
+
+        if ( $stmt = $db_conn->prepare($sql) ) {
 
             if ($params) {
                 $types = str_repeat('s', count($params)); // all string types: must assume proper formatting for floats, dates etc
@@ -542,11 +585,11 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
                 }
 
                 if ($returnType == self::QRY_RETURN_INSERT_ID){
-                    return (int)$conn->insert_id;
+                    return (int)$db_conn->insert_id;
                 }
 
                 if ($returnType == self::QRY_RETURN_ROWS_AFFECTED){
-                    return (int)$conn->affected_rows;
+                    return (int)$db_conn->affected_rows;
                 }
 
                 if ($returnType == self::QRY_RETURN_RETCODE){
@@ -557,28 +600,30 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             }
         }
  
-        if ( $conn->error ){
+        if ( $db_conn->error ){
 
-            return "MySQL error reported: " . $conn->error;
+            return "MySQL error reported: " . $db_conn->error;
+            throw new Exception("dbConn reports MySQL: " .  $db_conn->error);
     
             //$logEntry = "SQL: " . $sql;
             //$logEntry .= "\nparams = [" . print_r($params, true) . "]";
-            //$logEntry .= "\nerror: " . $conn->error;
+            //$logEntry .= "\nerror: " . $db_conn->error;
             //Yes3::logDebugMessage('0', $logEntry, 'dbQuery error');
         }
     
-        return false;
+        throw new Exception("dbConn failed for unknown reason");
     }
     
     public static function dbFetchRecords($sql, $parameters = [])
     {
-       $rows = [];
-       $resultSet = self::dbQuery($sql, $parameters, self::QRY_RETURN_RESULTSET);
-       if ( $resultSet->num_rows > 0 ) {
-          while ($row = $resultSet->fetch_assoc()) {
-             $rows[] = $row;
-          }
-       }
+        $rows = [];
+        $resultSet = self::dbQuery($sql, $parameters, self::QRY_RETURN_RESULTSET);
+        if ( $resultSet->num_rows > 0 ) {
+            while ($row = $resultSet->fetch_assoc()) {
+                $rows[] = $row;
+            }
+            $resultSet->free_result();
+        }
  
        return $rows;
     }
@@ -591,6 +636,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
             yield $row;
         }
+        $resultSet->free_result();
     }
 
     public static function dbFetchRecord($sql, $parameters = []){

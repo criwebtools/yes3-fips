@@ -125,6 +125,8 @@ $copy = $module->getCopyright();
                             <tr><td>Pending</td><td id='summary_pending'>0</td><td id='summary_pending_pct'>0%</td><td></td></tr>
                             <tr><td>Next API Batch</td><td id='summary_apibatch'>0</td><td id='summary_apibatch_pct'>0%</td><td><a href='javaScript:FIPS.clearApiBatch()' title="Reset all unmatched records marked 'next API batch' to 'pending'." >reset</a></td></tr>
                             <tr><td>In Process</td><td id='summary_inprocess'>0</td><td id='summary_inprocess_pct'>0%</td><td></td></tr>
+                            <tr><td>PO Box</td><td id='summary_pobox'>0</td><td id='summary_pobox_pct'>0%</td><td></td></tr>
+                            <tr><td>Deferred</td><td id='summary_deferred'>0</td><td id='summary_deferred_pct'>0%</td><td></td></tr>
                             <tr><td>Closed</td><td id='summary_closed'>0</td><td id='summary_closed_pct'>0%</td><td></td></tr>
                             <tr><td>Closed: Matched</td><td id='summary_closed_matched'>0</td><td id='summary_closed_matched_pct'>0%</td><td></td></tr>
                             <tr><td>Closed: Unmatched</td><td id='summary_closed_unmatched'>0</td><td id='summary_closed_unmatched_pct'>0%</td><td></td></tr>

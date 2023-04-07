@@ -692,6 +692,8 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             SUM(IF(IFNULL(s.`value`, ?)=?, 1, 0)) AS `summary_pending`,
             SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_apibatch`,
             SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_inprocess`,
+            SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_pobox`,
+            SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_deferred`,
             SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_closed`,           
             SUM(IF(IFNULL(s.`value`, 0)=? AND IFNULL(m.`value`, '')='Match', 1, 0)) AS `summary_closed_matched`,
             SUM(IF(IFNULL(s.`value`, 0)=? AND IFNULL(m.`value`, '')<>'Match', 1, 0)) AS `summary_closed_unmatched`           
@@ -706,6 +708,8 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             FIO::MATCH_STATUS_PENDING,
             FIO::MATCH_STATUS_NEXT_API_BATCH,
             FIO::MATCH_STATUS_IN_PROCESS,
+            FIO::MATCH_STATUS_PO_BOX,
+            FIO::MATCH_STATUS_DEFERRED,
             FIO::MATCH_STATUS_CLOSED,
             FIO::MATCH_STATUS_CLOSED,
             FIO::MATCH_STATUS_CLOSED,

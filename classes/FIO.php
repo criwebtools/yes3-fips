@@ -21,6 +21,9 @@ interface FIO
     public const IF_SINGLE_ADDRESS_FIELD = 1;
     public const IF_MULTIPLE_ADDRESS_FIELDS = 2;
     public const ALWAYS = 3;
+    public const IF_SOURCE_DATABASE = 4;
+    public const IF_SOURCE_REDCAP = 8;
+    
 
     public const MATCH_RESULT_MATCHED = 'Match';
     public const MATCH_RESULT_UNMATCHED = 'No_Match';

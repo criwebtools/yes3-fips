@@ -148,6 +148,12 @@ FIPS.populateTheSummary = function(response){
     $('td#summary_inprocess').html(response.summary_inprocess);
     $('td#summary_inprocess_pct').html( FIPS.percentOf(response.summary_inprocess, response.summary_n, 'total') );
 
+    $('td#summary_pobox').html(response.summary_pobox);
+    $('td#summary_pobox_pct').html( FIPS.percentOf(response.summary_pobox, response.summary_n, 'total') );
+
+    $('td#summary_deferred').html(response.summary_deferred);
+    $('td#summary_deferred_pct').html( FIPS.percentOf(response.summary_deferred, response.summary_n, 'total') );
+
     $('td#summary_closed').html(response.summary_closed);
     $('td#summary_closed_pct').html( FIPS.percentOf(response.summary_closed, response.summary_n, 'total') );
 
@@ -347,7 +353,7 @@ FIPS.populateTheEditor = function(response){
 
     FIPS.hideEditorSaveButton();
 
-    if ( x.fips_history_id ){
+    if ( x.fom_archive ){
 
         FIPS.showEditorRestoreButton();
     }

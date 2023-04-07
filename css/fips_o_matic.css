@@ -168,7 +168,7 @@ tbody#fips-editor-tbody textarea {
 
     width: 100% !important;
     resize: vertical;
-    height: calc( 2 * 1.5em + var(--y3-space-sm + 1));
+    height: 4.5em;
 }
 
 
