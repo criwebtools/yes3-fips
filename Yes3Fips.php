@@ -60,8 +60,8 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         [ "field_name"=>"fips_address_submitted", "type"=>"textarea", "label"=>"Address submitted for match", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_address_matched", "type"=>"textarea", "label"=>"Matched address", "editable"=>FIO::NEVER, "size"=>100 ],
 
-        [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
-        [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
 
@@ -577,9 +577,9 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         $post = [
             'location' => 'geographies',
-            'benchmark'=>'Public_AR_Census2020',
-            'vintage' => 'Census2020_Census2020',
-            'layers' => 10,
+            'benchmark'=>'Public_AR_Current',  // alt: Public_AR_ACS2022, Public_AR_Current, Public_AR_Census2020
+            'vintage' => 'Current_Current', // alt: Current_ACS2022, Current_Current, Census2020_Census2020
+            'layers' => 10, // census blocks GEOID=15 digit FIPS
             'format' => 'json',
             'addressFile' => $addressfile
         ];

@@ -148,7 +148,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         return "API call succeeded.<br>{$n} record(s) processed.<br>{$nMatchedExact} exact match(es).<br>{$nMatchedNonExact} fuzzy match(es).<br>{$nUnmatched} not matched.";
     }
 
-    public function getFIPSrecords(string $filter, string $record, int $limit=10000): array {
+    public function getFIPSrecords(string $filter, string $record, int $limit=50000): array {
 
         if ( $record ){
 
