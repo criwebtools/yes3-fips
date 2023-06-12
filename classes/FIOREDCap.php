@@ -10,26 +10,61 @@ use Yale\Yes3Fips\FIPS;
 
 class FIOREDCap implements \Yale\Yes3Fips\FIO {
 
-    public function makeCsvForApiCall(string $record): string {
+    public function getAddressForApiCall(string $record): array {
+
+        $address = [];
 
         $project_id = FIPS::getProjectID();
 
         $event_id = FIPS::getProjectSetting('fips-event');
 
-        $params = [ $project_id, $event_id ];
+        $sql = "SELECT k.`value` AS `fips_linkage_id`
+            , a1.`value` AS `fips_address`
+            , a2.`value` AS `fips_address_street`
+            , a3.`value` AS `fips_address_city`
+            , a4.`value` AS `fips_address_state`
+            , SUBSTRING(a5.`value`, 1, 5) AS `fips_address_zip`
+        FROM redcap_data k
+            LEFT JOIN redcap_data ms ON ms.project_id=k.project_id AND ms.event_id=k.event_id AND ms.`record`=k.`record` AND ms.field_name='fips_match_status'
+            LEFT JOIN redcap_data a1 ON a1.project_id=k.project_id AND a1.event_id=k.event_id AND a1.`record`=k.`record` AND a1.field_name='fips_address'
+            LEFT JOIN redcap_data a2 ON a2.project_id=k.project_id AND a2.event_id=k.event_id AND a2.`record`=k.`record` AND a2.field_name='fips_address_street'
+            LEFT JOIN redcap_data a3 ON a3.project_id=k.project_id AND a3.event_id=k.event_id AND a3.`record`=k.`record` AND a3.field_name='fips_address_city'
+            LEFT JOIN redcap_data a4 ON a4.project_id=k.project_id AND a4.event_id=k.event_id AND a4.`record`=k.`record` AND a4.field_name='fips_address_state'
+            LEFT JOIN redcap_data a5 ON a5.project_id=k.project_id AND a5.event_id=k.event_id AND a5.`record`=k.`record` AND a5.field_name='fips_address_zip'
+        WHERE k.project_id=? AND k.event_id=? AND k.field_name='fips_linkage_id' AND k.`record`=? LIMIT 1";
 
-        $extraWhere = "";
+        $params = [ $project_id, $event_id, $record ];
 
-        if ( $record ){
+        return Yes3::fetchRecord($sql, $params);
+    }
 
-            $extraWhere = " AND k.`record`=?";
-            $params[] = $record;
-        }
-        else {
+    public function getLocationForApiCall(string $record): array {
 
-            $extraWhere = " AND ms.`value`=?";
-            $params[] = self::MATCH_STATUS_NEXT_API_BATCH;
-        }
+        $address = [];
+
+        $project_id = FIPS::getProjectID();
+
+        $event_id = FIPS::getProjectSetting('fips-event');
+
+        $sql = "SELECT k.`value` AS `fips_linkage_id`
+            , a2.`value` AS `fips_longitude`
+            , a3.`value` AS `fips_latitude`
+        FROM redcap_data k
+            LEFT JOIN redcap_data ms ON ms.project_id=k.project_id AND ms.event_id=k.event_id AND ms.`record`=k.`record` AND ms.field_name='fips_match_status'
+            LEFT JOIN redcap_data a2 ON a2.project_id=k.project_id AND a2.event_id=k.event_id AND a2.`record`=k.`record` AND a2.field_name='fips_longitude'
+            LEFT JOIN redcap_data a3 ON a3.project_id=k.project_id AND a3.event_id=k.event_id AND a3.`record`=k.`record` AND a3.field_name='fips_latitude'
+        WHERE k.project_id=? AND k.event_id=? AND k.field_name='fips_linkage_id' AND k.`record`=? LIMIT 1";
+
+        $params = [ $project_id, $event_id, $record ];
+
+        return Yes3::fetchRecord($sql, $params);
+    }
+
+    public function makeCsvForApiCall(): string {
+
+        $project_id = FIPS::getProjectID();
+
+        $event_id = FIPS::getProjectSetting('fips-event');
 
         $sql = "SELECT k.`value` AS `fips_linkage_id`
             , a2.`value` AS `fips_address_street`
@@ -42,20 +77,16 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
             LEFT JOIN redcap_data a3 ON a3.project_id=k.project_id AND a3.event_id=k.event_id AND a3.`record`=k.`record` AND a3.field_name='fips_address_city'
             LEFT JOIN redcap_data a4 ON a4.project_id=k.project_id AND a4.event_id=k.event_id AND a4.`record`=k.`record` AND a4.field_name='fips_address_state'
             LEFT JOIN redcap_data a5 ON a5.project_id=k.project_id AND a5.event_id=k.event_id AND a5.`record`=k.`record` AND a5.field_name='fips_address_zip'
-        WHERE k.project_id=? AND k.event_id=? AND k.field_name='fips_linkage_id' {$extraWhere}
+        WHERE k.project_id=? AND k.event_id=? AND k.field_name='fips_linkage_id' AND ms.`value`=?
         ORDER BY 0+k.`value`";
 
-        if ( $record ) {
-
-            $sql .= " LIMIT 1";
-        }
+        $params = [ $project_id, $event_id, self::MATCH_STATUS_NEXT_API_BATCH ];
 
         $diag = print_r(
             [
                 'sql' => $sql,
                 'params' => $params,
-                'const' => self::MATCH_STATUS_IN_PROCESS,
-                'record' => $record
+                'const' => self::MATCH_STATUS_IN_PROCESS
             ]
             , true
             );

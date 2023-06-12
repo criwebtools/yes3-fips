@@ -141,6 +141,32 @@ div#fips-editor input[type=button]:focus {
     outline: auto !important;
 }
 
+div#fips-editor-api-panel {
+
+    display: none;
+}
+
+input.fips-editor-api-option {
+
+    border: 2px solid var(--y3-secondary) !important;
+    background-color: transparent !important;
+    color: var(--y3-secondary) !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+    font-family: var(--y3-font-family-medium) !important;
+    font-size: var(--y3-font-size-1000) !important;
+    font-weight: var(--y3-text-weight-medium) !important;
+    min-width: 0 !important;
+}
+
+.fips-editor-panel * {
+    font-family: var(--y3-font-family-regular) !important;
+    font-size: var(--y3-font-size-1250) !important;
+    font-weight: var(--y3-text-weight-regular) !important;
+}
+
 input#fips-api-batch-size {
 
     width: 5em;

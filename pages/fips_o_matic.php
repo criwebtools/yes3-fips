@@ -154,7 +154,7 @@ $copy = $module->getCopyright();
 
                 <input type='button' value='update API batch' title='Mark records for inclusion in the API batch.' onclick="FIPS.updateAPIBatch()" />
 
-                <input type='button' class='fips-dangerbutton fips-api-batch' value='call API (batch)' title='Process the API batch.' onclick="FIPS.callAPI()" />
+                <input type='button' class='fips-dangerbutton fips-api-batch' value='call API (batch)' title='Process the API batch.' onclick="FIPS.callAPIBatch()" />
 
                 <!--div class="yes3-flex-vcenter-hright">
                     <input type='button' class='fips-api-batch fips-subtlebutton' value='clear API batch' onclick="FIPS.clearApiBatch()" />

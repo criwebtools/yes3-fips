@@ -1,55 +1,69 @@
 <div id="fips-editor" class="yes3-panel yes3-panel-medium yes3-draggable" style="display:none">
 
-   <div class="yes3-panel-header-row yes3-legroom" id="fips-editor-header">
+    <div class="yes3-panel-header-row yes3-legroom" id="fips-editor-header">
 
-      <div class="yes3-panel-row-left">
-            FIPS Editor
-      </div>
+        <div class="yes3-panel-row-left">
+                FIPS Editor
+        </div>
 
-      <div class="yes3-panel-row-left yes3-bold" id="fips-record"></div>
+        <div class="yes3-panel-row-left yes3-bold" id="fips-record"></div>
 
-      <div class="yes3-panel-row-right">
+        <div class="yes3-panel-row-right">
 
-         <a href="javascript: FIPS.closeEditor(0)"><i class="fas fa-times fa-2x"></i></a>
-         
-      </div>
+            <a href="javascript: FIPS.closeEditor(0)"><i class="fas fa-times fa-2x"></i></a>
+            
+        </div>
 
-   </div>  
+        <div class="yes3-panel-row-right">
 
-   <div class="yes3-panel-row" id="fips-editor-container">
-       <table class="fips-editor" id="fips-editor-table">   
-         <tbody id="fips-editor-tbody"></tbody>      
-       </table>
-   </div>
+            <input type="button" class="fips-editor-api-option" value="SHOW API PANEL" onclick="FIPS.showEditorAPIpanel()" />
 
-   <div class="yes3-panel-row yes3-legroom" id="fips-editor-footer">
+        </div>
 
-      <div class="yes3-flex-container-right-aligned">
- 
-            <div class="yes3-flex-vcenter-hright">
+    </div>  
+    
+    <div class="yes3-panel-row yes3-legroom" id="fips-editor-api-panel">
 
-                  <div class="yes3-flex-vcenter-hleft">
-                        <input type="button" class="yes3-panel-button fips-restorebutton" value="restore original" id="fips-editor-restore-button" onclick="FIPS.restoreEditorRecord()" />
-                  </div>
+        <div class="yes3-flex-container-left-aligned yes3-flex-vcenter">
 
-                  <div class="yes3-flex-vcenter-hleft">
-                        <input type="button" class="yes3-panel-button yes3-button-caption-save yes3-save-button fips-savebutton" id="fips-editor-save-button" onclick="FIPS.saveEditorRecord()" />
-                  </div>
-                                  
-                  <div class="yes3-flex-vcenter-hleft">
-                        <input type='button' class='fips-dangerbutton fips-apibutton' value='call API' onclick="FIPS.callApiFromEditor()" />
-                  </div>
+            <span>benchmark:</span>
+                    
+            <select id="fips-editor-api-benchmark" title="select the geocoding benchmark">
+                <option value="Public_AR_Current">current</option>
+                <option value="Public_AR_ACS2022">2022 ACS</option>
+                <option value="Public_AR_Census2020">2020 Census</option>
+            </select>
+                        
+            <select id="fips-editor-api-searchtype" title="select the geocoding search type">
+                <option value="address">search by address</option>
+                <option value="location">search by location</option>
+            </select>
+                        
+            <input type='button' class='fips-dangerbutton fips-apibutton' value='call API' onclick="FIPS.callApiFromEditor()" />
+            
+        </div>
+    </div>
 
-                  <div class="yes3-flex-vcenter-hleft">
-                        <input type="button" value="close editor" class="yes3-panel-button fips-warningbutton" onclick="FIPS.closeEditor(0)" />
-                  </div>
-            </div>
+    <div class="yes3-panel-row" id="fips-editor-container">
 
-            <div class="yes3-flex-vcenter-hright">
-                  <div class="yes3-flex-vcenter-hleft" id="fips-editor-message"></div>
-            </div>
+        <table class="fips-editor" id="fips-editor-table">
 
-      </div>
-   </div>
+            <tbody id="fips-editor-tbody"></tbody>   
+
+        </table>
+
+    </div>
+
+    <div class="yes3-flex-container-right-aligned yes3-flex-vcenter yes3-headroom fips-editor-panel" id="fips-editor-footer">
+
+        <input type="button" value="close editor" class="yes3-panel-button fips-warningbutton" onclick="FIPS.closeEditor(0)" />
+
+        <input type="button" class="yes3-panel-button yes3-button-caption-save yes3-save-button fips-savebutton" id="fips-editor-save-button" onclick="FIPS.saveEditorRecord()" />
+
+        <input type="button" class="yes3-panel-button fips-restorebutton" value="restore original" id="fips-editor-restore-button" onclick="FIPS.restoreEditorRecord()" />
+
+        <span id="fips-editor-message"></span>
+
+    </div>
    
 </div>

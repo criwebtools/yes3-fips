@@ -39,8 +39,28 @@ interface FIO
     public const QRY_RETURN_INSERT_ID = 2;
     public const QRY_RETURN_RETCODE = 3;
     public const QRY_RETURN_ROWS_AFFECTED = 4;
+
+    /**
+     * benchmark:   Public_AR_ACS2022,  Public_AR_Current,  Public_AR_Census2020
+     * vintage:     Current_ACS2022,    Current_Current,    Census2020_Census2020
+     */
+    public const GEO_LAYERS = '2020 Census Blocks';
+    public const GEO_BENCHMARK_PRIMARY = 'Public_AR_Current';
+    public const GEO_BENCHMARK_SECONDARY = 'Public_AR_ACS2022';
+
+    public const GEO_BENCHMARK_VINTAGE = [
+
+        'Public_AR_Current' => 'Current_Current',
+        'Public_AR_ACS2022' => 'Current_ACS2022',
+        'Public_AR_Census2020' => 'Census2020_Census2020'
+
+    ];
     
-    public function makeCsvForApiCall(string $record): string;
+    public function makeCsvForApiCall(): string;
+    
+    public function getAddressForApiCall(string $record): array;
+    
+    public function getLocationForApiCall(string $record): array;
 
     public function saveGeoData(array $geoData): string;
 

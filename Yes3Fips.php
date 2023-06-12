@@ -493,16 +493,57 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         return $io->getSummary();
     }
 
+    private function getIoObject(){
+
+        $data_source = $this->getProjectSetting('data-source');
+
+        if ( $data_source==="redcap" ){
+
+            return new FIOREDCap();
+        }
+        else if ( $data_source==="database" ){
+
+            return new FIODatabase();
+        }
+        else throw new Exception("EM config error: could not determine IO class");
+    }
+
     /* -- API -- */
 
-    private function callApi($data){
+    private function callApiSingle($data){
 
         $record = $data['record'];
+        $benchmark = $data['benchmark'];
+        $searchtype = $data['searchtype'];
+
+        $addressType = $this->getProjectSetting('address-field-type');
+
+        $vintage = FIO::GEO_BENCHMARK_VINTAGE[ $benchmark ];
 
         if ( !$record ){
 
-            $record = '';
+            return "callApiSingle: no record specified";
         }
+
+        $io = $this->getIoObject();
+
+        $geoData = [];
+
+        if ( $searchtype === "address" ){
+
+            $address = $io->getAddressForApiCall( $record ) ;
+            $geoData = $this->geocodeSingleAddress( $addressType, $address, $benchmark, $vintage );
+        }
+        else {
+
+            $location = $io->getLocationForApiCall( $record ) ;
+            $geoData = $this->geocodeSingleLocation( $location, $benchmark, $vintage );
+        }
+
+        return $geoData;
+    }
+
+    private function callApiBatch(){
 
         $data_source = $this->getProjectSetting('data-source');
 
@@ -518,7 +559,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         $timestamp = Yes3::isoTimeStampString();
 
-        $temp_file_name = $io->makeCsvForApiCall($record);
+        $temp_file_name = $io->makeCsvForApiCall();
 
         //return $temp_file_name;
 
@@ -560,8 +601,193 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
     function prepareAddressElement( $s ){
 
-        return str_replace(["\r", "\t", "\n"], ["", " ", ", "], $s);
+        return trim(str_replace(["\r", "\t", "\n"], ["", " ", ", "], $s));
     }
+
+    private function geocodeSingleAddress( $addressType, $address, $benchmark, $vintage ){
+
+        if ( $addressType === "single" ){
+
+            $target_url = "https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress";
+
+            $post = [
+                'benchmark' => $benchmark,  
+                'vintage' => $vintage,
+                'layers' => FIO::GEO_LAYERS,
+                'format' => 'json',
+                'address' => $this->prepareAddressElement( $address['fips_address'] )
+            ];
+        }
+        else {
+
+            $target_url = "https://geocoding.geo.census.gov/geocoder/geographies/address";
+
+            $post = [
+                'benchmark' => $benchmark,  
+                'vintage' => $vintage,
+                'layers' => FIO::GEO_LAYERS,
+                'format' => 'json',
+                'street' => $address['fips_address_street'],
+                'city' => $address['fips_address_city'],
+                'state' => $address['fips_address_state'],
+                'zip' => $address['fips_address_zip']
+            ];
+        }
+
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL,$target_url);
+        curl_setopt($ch, CURLOPT_POST,1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        try {
+
+            $resultJSON = curl_exec ($ch);
+
+        } catch(exception $e) {
+
+            curl_close($ch);
+            return $e->getMessage();
+        }
+
+        curl_close ($ch);
+
+        if ( !Yes3::is_json_decodable($resultJSON) ){
+
+            return "[]";
+        }
+
+        $result = json_decode($resultJSON, true)['result'];
+
+        Yes3::logDebugMessage($this->getProjectId(), print_r($result, true), "geocodeSingleAddress");
+
+        $input_address = strtoupper( $result['input']['address']['address'] );
+
+        foreach( $result['addressMatches'] as $addressMatch ){
+
+            $matched_address = $addressMatch['matchedAddress'];
+
+            $match_result = $this->compareAddresses($input_address, $matched_address);
+        }
+
+        return $result;
+    }  
+    
+    private function compareAddresses( $input_address, $matched_address ){
+
+        $search = [
+            " ROAD ",
+            " STREET ",
+            " AVENUE ",
+            " LANE ",
+            " DRIVE ",
+            " ROUTE ",
+            " VALLEY ",
+            " TRAIL ",
+            " TURNPIKE ",
+            " BOULEVARD ",
+            " CIRCLE ",
+            " HIGHWAY ",
+        ];
+
+        $replace = [
+            " RD ",
+            " ST ",
+            " AVE ",
+            " LN ",
+            " DR ",
+            " RTE ",
+            " VLY ",
+            " TRL ",
+            " TPKE ",
+            " BLVD ",
+            " CIR ",
+            " HWY "
+        ];
+
+        if ( !$matched_address ) return "";
+
+        $input_street = "";
+        $input_city = "";
+        $input_city = "";
+        $input_zip = "";
+
+        FIPS::singleAddressFieldParser(strtoupper(trim($input_address)), $input_street, $input_city, $input_state, $input_zip);
+        
+        /**
+         * STREET ADDRESS:
+         * Whitespace runs are compressed to single spaces to facilitate comparisons (comma is considered a whitespace).
+         * Feature names are replaced with Tiger Line abbreviations.
+         * A space is prepended & appended (then trimmed out) so that whole-word replacements will always work.
+         */
+        $input_street = trim(str_replace($search, $replace, " ".preg_replace('/(\s|,)+/', ' ',$input_street)." "));
+
+        $matched_parts = explode(",", $matched_address);
+
+        $matched_street = trim($matched_parts[0]);
+        $matched_city   = trim($matched_parts[1]);
+        $matched_state  = trim($matched_parts[2]);
+        $matched_zip    = trim($matched_parts[3]);
+
+        $match_result = (
+            strpos($input_street, $matched_street) !== false &&
+            $input_city === $matched_city && 
+            $input_state === $matched_state &&
+            strpos($input_zip, $matched_zip) === 0
+        ) ? "Exact" : "Non_Exact";
+
+        $msg = 
+            "street: [{$input_street}] [{$matched_street}]"
+        . "\ncity  : [{$input_city}] [{$matched_city}]"
+        . "\nstate : [{$input_state}] [{$matched_state}]"
+        . "\nzip   : [{$input_zip}] [{$matched_zip}]"
+        . "\nMATCH RESULT = " . $match_result
+        ;
+
+        Yes3::logDebugMessage($this->getProjectId(), $msg, "compareAddresses");
+
+        return $match_result;
+    }
+
+    private function geocodeSingleLocation( $location, $benchmark, $vintage ){
+
+        $target_url = "https://geocoding.geo.census.gov/geocoder/geographies/coordinates";
+
+        $post = [
+            'benchmark' => $benchmark,  
+            'vintage' => $vintage,
+            'layers' => FIO::GEO_LAYERS,
+            'format' => 'json',
+            'x' => $location['fips_longitude'],
+            'y' => $location['fips_latitude']
+        ];
+
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL,$target_url);
+        curl_setopt($ch, CURLOPT_POST,1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        try {
+
+            $result = curl_exec ($ch);
+
+        } catch(exception $e) {
+
+            curl_close($ch);
+            return $e->getMessage();
+        }
+
+        curl_close ($ch);
+
+        Yes3::logDebugMessage($this->getProjectId(), $result, "geocodeSingleLocation");
+
+        return $result;
+    }    
 
     /**
      * okay for either REDcap or database, just needs a stored address csv
@@ -574,12 +800,12 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         $target_url = "https://geocoding.geo.census.gov/geocoder/geographies/addressbatch";
 
         $addressfile = curl_file_create($addressFilename);
+        $benchmark = FIO::GEO_BENCHMARK_PRIMARY;
+        $vintage = FIO::GEO_BENCHMARK_VINTAGE[ $benchmark ];
 
         $post = [
-            'location' => 'geographies',
-            'benchmark'=>'Public_AR_Current',  // alt: Public_AR_ACS2022, Public_AR_Current, Public_AR_Census2020
-            'vintage' => 'Current_Current', // alt: Current_ACS2022, Current_Current, Census2020_Census2020
-            'layers' => 10, // census blocks GEOID=15 digit FIPS
+            'benchmark'=> $benchmark,  
+            'vintage' => $vintage,
             'format' => 'json',
             'addressFile' => $addressfile
         ];
@@ -792,9 +1018,14 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
             return $this->getSummary();
         }
 
-        else if ($action==="call-api") {
+        else if ($action==="call-api-batch") {
 
-            return $this->callApi($payload);
+            return $this->callApiBatch($payload);
+        }
+
+        else if ($action==="call-api-single") {
+
+            return $this->callApiSingle($payload);
         }
 
         else if ($action==="get-api-batch-size") {

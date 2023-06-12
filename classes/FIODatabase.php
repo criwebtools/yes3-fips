@@ -9,22 +9,50 @@ use Yale\Yes3Fips\FIPS;
 
 class FIODatabase implements \Yale\Yes3Fips\FIO {
 
-    public function makeCsvForApiCall(string $record): string {
+    public function getAddressForApiCall(string $record): array {
 
-        $where = "";
+        $address = [];
 
-        $params = [];
+        $sql = "
+        SELECT 
+              fom_addresses.`fips_linkage_id`
+            , fom_crosswalk.`record`
+            , fom_addresses.`fips_address`
+            , fom_addresses.`fips_address_street`
+            , fom_addresses.`fips_address_city`
+            , fom_addresses.`fips_address_state`
+            , fom_addresses.`fips_address_zip`
+        FROM fom_addresses
+            INNER JOIN fom_crosswalk ON fom_addresses.fips_linkage_id=fom_crosswalk.fips_linkage_id
+        WHERE fom_crosswalk.`record`=?
+        ";
 
-        if ( $record ){
+        $params = [ $record ];
 
-            $where = "fom_crosswalk.`record`=?";
-            $params[] = $record;
-        }
-        else {
+        return self::dbFetchRecord($sql, $params);
+    }
 
-            $where = "`fips_match_status`=?";
-            $params[] = self::MATCH_STATUS_NEXT_API_BATCH;
-        }
+    public function getLocationForApiCall(string $record): array {
+
+        $address = [];
+
+        $sql = "
+        SELECT 
+              fom_addresses.`fips_linkage_id`
+            , fom_crosswalk.`record`
+            , fom_addresses.`fips_longitude`
+            , fom_addresses.`fips_latitude`
+        FROM fom_addresses
+            INNER JOIN fom_crosswalk ON fom_addresses.fips_linkage_id=fom_crosswalk.fips_linkage_id
+        WHERE fom_crosswalk.`record`=?
+        ";
+
+        $params = [ $record ];
+
+        return self::dbFetchRecord($sql, $params);
+    }
+
+    public function makeCsvForApiCall(): string {
 
         $sql = "
         SELECT 
@@ -35,20 +63,16 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             , fom_addresses.`fips_address_zip`
         FROM fom_addresses
             INNER JOIN fom_crosswalk ON fom_addresses.fips_linkage_id=fom_crosswalk.fips_linkage_id
-        WHERE {$where}
+        WHERE `fips_match_status`=?
         ";
 
-        if ( $record ) {
-
-            $sql .= " LIMIT 1";
-        }
+        $params = [ self::MATCH_STATUS_NEXT_API_BATCH ];
 
         $diag = print_r(
             [
                 'sql' => $sql,
                 'params' => $params,
-                'const' => self::MATCH_STATUS_IN_PROCESS,
-                'record' => $record
+                'const' => self::MATCH_STATUS_IN_PROCESS
             ]
             , true
             );

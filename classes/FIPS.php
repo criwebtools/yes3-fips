@@ -94,6 +94,110 @@ class FIPS {
         return $geoRecord;
     }
 
+    static function getCityStateZip( $s, &$city, &$state, &$zip ): bool {
+
+        $states = [
+            'AL' => 'ALABAMA',            
+            'AK' => 'ALASKA	',            
+            'AS' => 'AMERICAN SAMOA',     
+            'AZ' => 'ARIZONA',            
+            'AR' => 'ARKANSAS',           
+            'CA' => 'CALIFORNIA',         
+            'CO' => 'COLORADO',           
+            'CT' => 'CONNECTICUT',        
+            'DE' => 'DELAWARE',           
+            'DC' => 'DISTRICT OF COLUMBIA',
+            'FL' => 'FLORIDA',            
+            'GA' => 'GEORGIA',            
+            'GU' => 'GUAM',               
+            'HI' => 'HAWAII',             
+            'ID' => 'IDAHO',              
+            'IL' => 'ILLINOIS',           
+            'IN' => 'INDIANA',            
+            'IA' => 'IOWA',               
+            'KS' => 'KANSAS',             
+            'KY' => 'KENTUCKY',           
+            'LA' => 'LOUISIANA',          
+            'ME' => 'MAINE',              
+            'MD' => 'MARYLAND',           
+            'MA' => 'MASSACHUSETTS',      
+            'MI' => 'MICHIGAN',           
+            'MN' => 'MINNESOTA',          
+            'MS' => 'MISSISSIPPI',        
+            'MO' => 'MISSOURI',           
+            'MT' => 'MONTANA',            
+            'NE' => 'NEBRASKA',           
+            'NV' => 'NEVADA',             
+            'NH' => 'NEW HAMPSHIRE',      
+            'NJ' => 'NEW JERSEY',         
+            'NM' => 'NEW MEXICO',         
+            'NY' => 'NEW YORK',           
+            'NC' => 'NORTH CAROLINA',     
+            'ND' => 'NORTH DAKOTA',       
+            'MP' => 'NORTHERN MARIANA IS', 
+            'OH' => 'OHIO',               
+            'OK' => 'OKLAHOMA',           
+            'OR' => 'OREGON',             
+            'PA' => 'PENNSYLVANIA',       
+            'PR' => 'PUERTO RICO',        
+            'RI' => 'RHODE ISLAND',       
+            'SC' => 'SOUTH CAROLINA',     
+            'SD' => 'SOUTH DAKOTA',       
+            'TN' => 'TENNESSEE',          
+            'TX' => 'TEXAS',              
+            'UT' => 'UTAH',               
+            'VT' => 'VERMONT',            
+            'VA' => 'VIRGINIA',           
+            'VI' => 'VIRGIN ISLANDS',     
+            'WA' => 'WASHINGTON',         
+            'WV' => 'WEST VIRGINIA',      
+            'WI' => 'WISCONSIN',          
+            'WY' => 'WYOMING'        
+        ];
+
+        $city = "";
+        $state = "";
+        $zip = "";
+
+        // make sure a clean string
+        $s = trim($s, " ,\n\r\t\v\x00");
+
+        foreach($states as $abbr => $name){
+        
+            $matchtext = [];
+                
+            // bounded by white space, BOL or EOL
+            if ( !$i = preg_match("/(^|\s){$abbr}($|\s)/i", $s, $matchtext) ) {
+
+                $i = preg_match("/(^|\s){$name}($|\s)/i", $s, $matchtext);
+            }
+
+            if ( $i ) {
+
+                $j = stripos($s, $matchtext[0]);
+
+                if ( $j !== false ) {
+
+                    $state = $abbr;
+
+                    if ( $j > 0 ){
+
+                        $city = trim(substr($s, 0, $j));
+                    }
+
+                    if (  $j + strlen($matchtext[0]) < strlen($s)){
+
+                        $zip = trim(substr($s, $j+strlen($matchtext[0]) ));
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Assumes address string of the form
      * 
@@ -112,125 +216,82 @@ class FIPS {
      * @param mixed $zip 
      * @return bool 
      */
-    static function singleAddressFieldParser($address, &$street, &$city, &$state, &$zip): bool{
-
-        $states = [
-            ['name' => 'ALABAMA',              'abbrev' => 'AL'],
-            ['name' => 'ALASKA	',             'abbrev' => 'AK'],
-            ['name' => 'AMERICAN SAMOA	',     'abbrev' => 'AS'],
-            ['name' => 'ARIZONA',              'abbrev' => 'AZ'],
-            ['name' => 'ARKANSAS',             'abbrev' => 'AR'],
-            ['name' => 'CALIFORNIA',           'abbrev' => 'CA'],
-            ['name' => 'COLORADO',             'abbrev' => 'CO'],
-            ['name' => 'CONNECTICUT',          'abbrev' => 'CT'],
-            ['name' => 'DELAWARE',             'abbrev' => 'DE'],
-            ['name' => 'DISTRICT OF COLUMBIA', 'abbrev' => 'DC'],
-            ['name' => 'FLORIDA',              'abbrev' => 'FL'],
-            ['name' => 'GEORGIA',              'abbrev' => 'GA'],
-            ['name' => 'GUAM',                 'abbrev' => 'GU'],
-            ['name' => 'HAWAII',               'abbrev' => 'HI'],
-            ['name' => 'IDAHO',                'abbrev' => 'ID'],
-            ['name' => 'ILLINOIS',             'abbrev' => 'IL'],
-            ['name' => 'INDIANA',              'abbrev' => 'IN'],
-            ['name' => 'IOWA',                 'abbrev' => 'IA'],
-            ['name' => 'KANSAS',               'abbrev' => 'KS'],
-            ['name' => 'KENTUCKY',             'abbrev' => 'KY'],
-            ['name' => 'LOUISIANA',            'abbrev' => 'LA'],
-            ['name' => 'MAINE',                'abbrev' => 'ME'],
-            ['name' => 'MARYLAND',             'abbrev' => 'MD'],
-            ['name' => 'MASSACHUSETTS',        'abbrev' => 'MA'],
-            ['name' => 'MICHIGAN',             'abbrev' => 'MI'],
-            ['name' => 'MINNESOTA',            'abbrev' => 'MN'],
-            ['name' => 'MISSISSIPPI',          'abbrev' => 'MS'],
-            ['name' => 'MISSOURI',             'abbrev' => 'MO'],
-            ['name' => 'MONTANA',              'abbrev' => 'MT'],
-            ['name' => 'NEBRASKA',             'abbrev' => 'NE'],
-            ['name' => 'NEVADA',               'abbrev' => 'NV'],
-            ['name' => 'NEW HAMPSHIRE',        'abbrev' => 'NH'],
-            ['name' => 'NEW JERSEY',           'abbrev' => 'NJ'],
-            ['name' => 'NEW MEXICO',           'abbrev' => 'NM'],
-            ['name' => 'NEW YORK',             'abbrev' => 'NY'],
-            ['name' => 'NORTH CAROLINA',       'abbrev' => 'NC'],
-            ['name' => 'NORTH DAKOTA',         'abbrev' => 'ND'],
-            ['name' => 'NORTHERN MARIANA IS',  'abbrev' => 'MP'],
-            ['name' => 'OHIO',                 'abbrev' => 'OH'],
-            ['name' => 'OKLAHOMA',             'abbrev' => 'OK'],
-            ['name' => 'OREGON',               'abbrev' => 'OR'],
-            ['name' => 'PENNSYLVANIA',         'abbrev' => 'PA'],
-            ['name' => 'PUERTO RICO',          'abbrev' => 'PR'],
-            ['name' => 'RHODE ISLAND',         'abbrev' => 'RI'],
-            ['name' => 'SOUTH CAROLINA',       'abbrev' => 'SC'],
-            ['name' => 'SOUTH DAKOTA',         'abbrev' => 'SD'],
-            ['name' => 'TENNESSEE',            'abbrev' => 'TN'],
-            ['name' => 'TEXAS',                'abbrev' => 'TX'],
-            ['name' => 'UTAH',                 'abbrev' => 'UT'],
-            ['name' => 'VERMONT',              'abbrev' => 'VT'],
-            ['name' => 'VIRGINIA',             'abbrev' => 'VA'],
-            ['name' => 'VIRGIN ISLANDS',       'abbrev' => 'VI'],
-            ['name' => 'WASHINGTON',           'abbrev' => 'WA'],
-            ['name' => 'WEST VIRGINIA',        'abbrev' => 'WV'],
-            ['name' => 'WISCONSIN',            'abbrev' => 'WI'],
-            ['name' => 'WYOMING',              'abbrev' => 'WY']
-        ];
+    static function singleAddressFieldParser($address, &$street, &$city, &$state, &$zip): bool {
 
         $address = trim($address);
-    
-        /**
-         * convert \r\n and \r to \n
-         */
-        $address = str_replace("\r", "\n", $address);
-        $address = str_replace("\n\n", "\n", $address);
-        $address = str_replace("\t", " ", $address);
-        $address = str_replace(",", ", ", $address);
-        $address = str_replace("  ", " ", $address);
-    
-        $address_lines = explode("\n", $address);
-    
-        $nLines = count($address_lines);
     
         $street = "";
         $state = "";
         $city = "";
-        $zip = "";
-    
-        $lnum = 0;
-    
-        foreach ($address_lines as $address_line){
+        $zip = "";  
         
-            $lnum++;
+        $gotState = false;
+
+        /**
+         * convert \r to \n for exploding.
+         */
+        $address = trim(str_replace("\r", "\n", $address), " ,\n\r\t\v\x00");
+
+        /**
+         * if no line breaks then we will explode on commas and hope for the best
+         */
+        $xpchar = "\n";
+
+        if ( strpos($address, $xpchar)===false ){
+
+            $xpchar = ",";
+        }
+
+        // build the address lines, ignoring blank lines
         
-            if ( $lnum < $nLines ){
-        
-                if ( $address_line ) {
-                    if ($street) $street .= "\n";
-                    $street .= $address_line;
-                }
+        $parts = explode($xpchar, $address);
+
+        $address_lines = [];
+
+        foreach($parts as $part){
+
+            if ( $part ) {
+
+                // remove whitespace runs and commas
+                $address_lines[] = preg_replace('/(\s|,)+/', ' ', trim($part));
             }
-            else {
-        
-                foreach($states as $s){
-        
-                    $matchtext = [];
-                
-                    if ( !$i = preg_match("/[, ]{$s['abbrev']}[, ]/i", $address_line, $matchtext) ) {
+        }
 
-                        $i = preg_match("/[, ]{$s['name']}[, ]/i", $address_line, $matchtext);
-                    }
-        
-                    if ( $i ){
+        $nLines = count($address_lines);
 
-                        $j = stripos($address_line, $matchtext[0]);
-        
-                        $city = trim(substr($address_line, 0, $j), " ,\n\r\t\v\x00");
-                        $state = $s['abbrev'];
-                        $zip = trim(substr($address_line, $j+strlen($matchtext[0])),  " ,\n\r\t\v\x00");
-                        break;
+        // an address must have at least two lines
+
+        if ( $nLines > 1 ) {
+
+            $lastStreetIndex = 0;
+
+            $gotState = self::getCityStateZip($address_lines[$nLines-1], $city, $state, $zip);
+
+            if ( $gotState ){
+
+                if ( !$city ){
+
+                    $city = $address_lines[$nLines-2];
+                    $lastStreetIndex = $nLines-3;
+                }
+                else {
+
+                    $lastStreetIndex = $nLines-2;
+                }
+
+                if ( $lastStreetIndex >= 0 ){
+
+                    $street = $address_lines[0];
+
+                    for ($j=1; $j<=$lastStreetIndex; $j++){
+
+                        $street .= "\n" . $address_lines[$j];
                     }
                 }
             }
         }
         
-        return ( $street && $city && $state && $zip ) ? true:false;
+        return $gotState;
     }
 
     static function getProjectId(){
@@ -242,5 +303,4 @@ class FIPS {
 
         return ExternalModules::getProjectSetting(self::MODULE_DIRECTORY_PREFIX, ExternalModules::getProjectId(), $setting);
     }
-
 }

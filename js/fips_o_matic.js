@@ -51,22 +51,69 @@ FIPS.hideListCount = function( n ){
 
 FIPS.hideEditorSaveButton = function(showAPIbutton){
 
-    showAPIbutton = showAPIbutton || FIPS.constants.SHOW_API_BUTTON;
+    //showAPIbutton = showAPIbutton || FIPS.constants.SHOW_API_BUTTON;
 
     //$('input.yes3-save-button').css('opacity', '0.5');
+
     $('#fips-editor input.fips-savebutton').css('visibility', 'hidden');
 
+    $('#fips-editor-api-panel').css('opacity', '1.00');
+
+/*
     if ( showAPIbutton===FIPS.constants.SHOW_API_BUTTON ){
 
-        $('#fips-editor input.fips-apibutton').css('visibility', 'visible');
+        FIPS.showEditorAPIoption();
     }
+    else {
+
+        FIPS.hideEditorAPIoption();;
+    }
+*/
 }
 
 FIPS.showEditorSaveButton = function(){
 
     //$('input.yes3-save-button').css('opacity', '1.0');
     $('#fips-editor input.fips-savebutton').css('visibility', 'visible');
-    $('#fips-editor input.fips-apibutton').css('visibility', 'hidden');
+
+    $('#fips-editor-api-panel').css('opacity', '0.33');
+}
+
+FIPS.showEditorAPIoption = function(){
+
+    $('.fips-editor-api-option').show();
+}
+
+FIPS.hideEditorAPIoption = function(){
+
+    $('.fips-editor-api-option').hide();
+}
+
+FIPS.showEditorAPIpanel = function(){
+
+    const $api = $('#fips-editor-api-panel');
+
+    $api.show();
+
+    FIPS.adjustEditorPanelHeight();
+
+    FIPS.hideEditorAPIoption();
+}
+
+FIPS.adjustEditorPanelHeight = function(){
+
+    const $api = $('#fips-editor-api-panel');
+    const $ed = $('#fips-editor-container');
+
+    if ( $api.is(':visible') ) {
+
+        $ed.css('height', $ed.outerHeight() - $api.outerHeight() + 'px')
+    }
+}
+
+FIPS.hideEditorAPIpanel = function(){
+
+    $('#fips-editor-api-panel').hide();
 }
 
 FIPS.clearEditorChangedStatus = function(){
@@ -282,7 +329,8 @@ FIPS.populateTheEditor = function(response){
     // chear any 'changed' markings
     $tbody.find('.fips-changed').removeClass('fips-changed');
 
-    // clean slate, no save
+    // clean slate, no save and no API panel
+
     FIPS.hideEditorSaveButton();
 
     // more cleanup
@@ -348,10 +396,11 @@ FIPS.populateTheEditor = function(response){
 
     $formContainer.height( formHeight+'px' );
 
+    // in case the API panel is visible
+    FIPS.adjustEditorPanelHeight();
+
     // updates style to mark row being edited, also interim data saves (e.g. from API call)
     FIPS.updateListFromEditor();
-
-    FIPS.hideEditorSaveButton();
 
     if ( x.fom_archive ){
 
@@ -379,7 +428,7 @@ FIPS.populateTheEditor = function(response){
 
 FIPS.openEditor = function( record ){
 
-    console.log('openEditor', record);
+    //console.log('openEditor', record);
 
     $('#fips-record').html( record );
 
@@ -413,6 +462,10 @@ FIPS.openEditor = function( record ){
 
         $tbody.append( FIPS.fipsEditorRow(fields[i].field_name, fields[i].label, fields[i].type, editable, fields[i].size, choices) );
     }
+
+    FIPS.showEditorAPIoption();
+
+    FIPS.hideEditorAPIpanel();
 
     FIPS.loadRecordIntoEditor( record );
 }
@@ -749,11 +802,15 @@ FIPS.callApiFromEditor = function(){
     FIPS.postEditorMessage("WAIT");
 
     const record = $('#fips-editor input#record').val();
+    const benchmark = $('select#fips-editor-api-benchmark').val();
+    const searchtype = $('select#fips-editor-api-searchtype').val();
 
     YES3.ajax(
-        'call-api',
+        'call-api-single',
         {
-            record: record
+            record: record,
+            benchmark: benchmark,
+            searchtype: searchtype
         },
         FIPS.callApiFromEditorConfirmation
     )
@@ -771,12 +828,12 @@ FIPS.callApiFromEditorConfirmation = function(response){
     }
 }
 
-FIPS.callAPI = function(){
+FIPS.callAPIBatch = function(){
 
     FIPS.postMessage( 'WAIT', false, true );
 
     YES3.ajax(
-        'call-api',
+        'call-api-batch',
         {},
         FIPS.callAPIConfirmation
     );
