@@ -11,8 +11,6 @@ use mysqli;
  * Singleton class to hold the db connection.
  * 
  * Final keyword prevents the connection class from being extended
- * 
- * @package 
  */
 final class FIODbConnection
 {
@@ -37,143 +35,49 @@ final class FIODbConnection
     * Disable the "magic methods" __sleep() and __wakeup() to prevent serializing and unserializing.
     * (storing instance as serialized string for later restoration, which would create a second instance)
     */
-   //public function __sleep()
-   //{
-   //   throw new Exception("Cannot serialize singleton");
-   //}
+   public function __sleep()
+   {
+      throw new Exception("Cannot serialize singleton");
+   }
    
    public function __wakeup()
    {
       throw new Exception("Cannot unserialize singleton");
    }   
 
-   public static function getInstance()
-   {
-      if (self::$instance == null) {
-         $className = __CLASS__;
-         self::$instance = new $className();
-      }
-      return self::$instance;
-   }
+    public static function getInstance()
+    {
+        if (self::$instance == null) {
+            $className = __CLASS__;
+            self::$instance = new $className();
+            self::initConn();
+        }
 
-   public static function initializeConnection()
-   {
-      $db = self::getInstance();
+        return self::$instance;
+    }
 
-      $host = ""; $user = ""; $password = ""; $database = "";
+    private static function initConn(){
 
-      $specfile = FIPS::getProjectSetting('db-spec-file');
+        $host = ""; $user = ""; $password = ""; $database = "";
 
-      require $specfile; // connection info, hopefully store off webroot
+        $specfile = FIPS::getProjectSetting('db-spec-file');
 
-      $db->conn = new mysqli($host, $user, $password, $database);
+        require $specfile;
 
-      if ($db->conn->connect_errno) {
-         throw new Exception("Failed to connect to MySQL: (" . $db->conn->connect_errno . ") " . $db->conn->connect_error);
-      }
-            
-      Yes3::logDebugMessage(0, 'Db connection established', 'FIODbConnection');
-   }
+        self::$instance->conn = new mysqli($host, $user, $password, $database);
 
-   /*
-   public static function getInstance()
-   {
-      if (self::$instance == null) {
-
-         $className = __CLASS__;
-
-         self::$instance = new $className();
-
-         $host = "";
-         $database = "";
-         $password = "";
-         $user = "";
-
-         $specfile = FIPS::getProjectSetting('db-spec-file');
-
-         //Yes3::logDebugMessage(0, $specfile, 'FIODbConnection:specfile');
-
-         //require_once $specfile;
-
-         
-         $host = FIPS::getProjectSetting('db-host'); 
-         $user = FIPS::getProjectSetting('db-user'); 
-         $password = FIPS::getProjectSetting('db-password'); 
-         $database = FIPS::getProjectSetting('db-database');
-         
-         self::$instance->conn = new mysqli($host, $user, $password, $database);
-
-         if (self::$instance->conn->connect_errno) {
-
+        if (self::$instance->conn->connect_errno) {
             throw new Exception("Failed to connect to MySQL: (" . self::$instance->conn->connect_errno . ") " . self::$instance->conn->connect_error);
-         }
+        }
 
-         Yes3::logDebugMessage(0, 'Db connection established', 'FIODbConnection');
-      }
+    }
 
-      return self::$instance;
-   }
-   */
-   /*
-   public static function initializeConnection()
-   {
-      $db = self::getInstance();
+    public static function getConn()
+    {
+        $db = self::getInstance();
 
-      $host = FIPS::getProjectSetting('db-host'); 
-      $user = FIPS::getProjectSetting('db-user'); 
-      $password = FIPS::getProjectSetting('db-password'); 
-      $database = FIPS::getProjectSetting('db-database');
-
-      $db->conn = new mysqli($host, $user, $password, $database);
-
-      if ($db->conn->connect_errno) {
-         throw new Exception("Failed to connect to MySQL: (" . $db->conn->connect_errno . ") " . $db->conn->connect_error);
-      }
-   }
-*/
-   public static function getConn()
-   {
-      Yes3::logDebugMessage(0, print_r($GLOBALS['fips_db_conn'], true), 'FIODbConnection:pre');
-      
-      if ( !isset($GLOBALS['fips_db_conn']) || !is_object($GLOBALS['fips_db_conn']) || !$GLOBALS['fips_db_conn']->host_info) {
-
-         $host = ""; $user = ""; $password = ""; $database = "";
-
-         $specfile = FIPS::getProjectSetting('db-spec-file');
- 
-         require $specfile; // connection info, hopefully store off webroot
- 
-         $GLOBALS['fips_db_conn'] = new mysqli($host, $user, $password, $database);
- 
-         if ( $GLOBALS['fips_db_conn']->connect_errno) {
-
-            Yes3::logDebugMessage(0,  $GLOBALS['fips_db_conn']->connect_error, 'FIODbConnection');
-            throw new Exception("Failed to connect to MySQL: (" .  $GLOBALS['fips_db_conn']->connect_errno . ") " .  $GLOBALS['fips_db_conn']->connect_error);
-         }
-         else {
-
-            Yes3::logDebugMessage(0, 'Db connection established', 'FIODbConnection');
-         }
-     }
-         
-     Yes3::logDebugMessage(0, print_r($GLOBALS['fips_db_conn'], true), 'FIODbConnection:post');
- 
-      return $GLOBALS['fips_db_conn'];
-      
-      //global $fips_db_conn;
-
-      //return $fips_db_conn;
-      /*
-      $db = self::getInstance();
-
-      if ( !$db->conn ){
-
-         self::initializeConnection();
-         $db = self::getInstance();
-      }
-      return $db->conn;
-      */
-   }
+        return $db->conn;
+    }
 
 }
 

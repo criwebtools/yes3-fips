@@ -1,17 +1,58 @@
 <?php 
 
-define('LOG_DEBUG_MESSAGES', '1');
+use \Yale\Yes3Fips\FIPS;
+
+use \Yale\Yes3Fips\Yes3;
 
 $module = new Yale\Yes3Fips\Yes3Fips();
 
 $module->getCodeFor('fips_o_matic', true);
+
+//$module->initializeDBO();
 
 $copy = $module->getCopyright();
 
 //$module->testDb();
 
 //die("have a nice day");
+/*
+session_start();
 
+$_SESSION['fips_db_conn'] = null;
+
+if ( FIPS::getProjectSetting('data-source')==="database" ){
+
+    $host = ""; $user = ""; $password = ""; $database = "";
+
+    $specfile = FIPS::getProjectSetting('db-spec-file');
+
+    require $specfile; // connection info, hopefully store off webroot
+
+    try {
+
+        $_SESSION['fips_db_conn'] = new mysqli($host, $user, $password, $database);
+
+    } catch( Exception $e ) {
+
+        Yes3::logDebugMessage(0, $e->getMessage(), 'Yes3Fips:exception');
+        throw new Exception("Failed to connect to MySQL (" . $e->getMessage());
+    }
+
+    if ($_SESSION['fips_db_conn']->connect_error) {
+
+        Yes3::logDebugMessage(0, $_SESSION['fips_db_conn']->connect_error, 'Yes3Fips:connection error');
+        throw new Exception("Failed to connect to MySQL: (" . $_SESSION['fips_db_conn']->connect_errno . ") " . $_SESSION['fips_db_conn']->connect_error);
+    }
+            
+    //Yes3::logDebugMessage(0, print_r($_SESSION['fips_db_conn'], true), 'Yes3Fips:DBCONN1');
+
+}
+
+//print_r($_SESSION);
+
+//die();
+
+*/
 ?>
 
 <div class='container' id='yes3-container'>

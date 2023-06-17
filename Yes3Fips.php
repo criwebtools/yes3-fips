@@ -6,21 +6,17 @@ ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 
+
 require "autoload.php";
 
 use Exception;
 use REDCap;
 use mysqli;
-use stdClass;
 
 use Yale\Yes3Fips\Yes3;
-
 use Yale\Yes3Fips\FIPS;
 use Yale\Yes3Fips\FIO;
 use Yale\Yes3Fips\FIOREDCap;
-use Yale\Yes3Fips\FIODbConnection;
-
-//$fips_db_conn = new stdClass;
 
 class Yes3Fips extends \ExternalModules\AbstractExternalModule
 {
@@ -42,26 +38,27 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         [ "field_name"=>"fips_address_street","type"=>"textarea", "label"=>"Street", "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_address_city",  "type"=>"text", "label"=>"City",   "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
-        [ "field_name"=>"fips_address_state", "type"=>"text", "label"=>"State",  "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_address_zip",   "type"=>"text", "label"=>"Zip",    "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_address_state", "type"=>"text", "label"=>"State",  "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>25 ],
+        [ "field_name"=>"fips_address_zip",   "type"=>"text", "label"=>"Zip",    "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>25 ],
     
         [ "field_name"=>"fips_comment",       "type"=>"textarea", "label"=>"comment",  "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>100 ],
 
-        [ "field_name"=>"fips_state",  "type"=>"text", "label"=>"FIPS state code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_county", "type"=>"text", "label"=>"FIPS county code",    "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_tract",  "type"=>"text", "label"=>"FIPS tract code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
-        [ "field_name"=>"fips_block",  "type"=>"text", "label"=>"FIPS block code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_state",  "type"=>"text", "label"=>"FIPS state code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>25 ],
+        [ "field_name"=>"fips_county", "type"=>"text", "label"=>"FIPS county code",    "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>25 ],
+        [ "field_name"=>"fips_tract",  "type"=>"text", "label"=>"FIPS tract code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>25 ],
+        [ "field_name"=>"fips_block",  "type"=>"text", "label"=>"FIPS block code",     "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>25 ],
         [ "field_name"=>"fips_code",   "type"=>"text", "label"=>"15-digit FIPS code",  "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_census_block_group","type"=>"text", "label"=>"12-digit Census block grp", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_state_county","type"=>"text", "label"=>"5-digit state+county", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>25 ],
 
         [ "field_name"=>"fips_match_result", "type"=>"text", "label"=>"Match result", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_match_type", "type"=>"text", "label"=>"Match type", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
 
         [ "field_name"=>"fips_address_submitted", "type"=>"textarea", "label"=>"Address submitted for match", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
-        [ "field_name"=>"fips_address_matched", "type"=>"textarea", "label"=>"Matched address", "editable"=>FIO::NEVER, "size"=>100 ],
+        [ "field_name"=>"fips_address_matched", "type"=>"textarea", "label"=>"Matched address(es)", "editable"=>FIO::NEVER, "size"=>100 ],
 
-        [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>100 ],
-        [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
 
@@ -95,27 +92,50 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
     function initializeDBO()
     {
+        if ( $this->getProjectSetting('data-source')!=="database" ){
+
+            return false;
+        }
+        
         //global $fips_db_conn;
         Yes3::logDebugMessage(0, 'initializeDBO invoked', 'Yes3Fips');
 
-        $host = ""; $user = ""; $password = ""; $database = "";
+        //session_start();
 
-        $specfile = FIPS::getProjectSetting('db-spec-file');
+        //if ( !isset($GLOBALS['fips_db_conn']) || !is_object($GLOBALS['fips_db_conn']) || !$GLOBALS['fips_db_conn']->host_info) {
+        if ( !$GLOBALS['fips_db_conn']) {
 
-        require $specfile; // connection info, hopefully store off webroot
+            $host = ""; $user = ""; $password = ""; $database = "";
 
-        $db_conn = new mysqli($host, $user, $password, $database);
+            $specfile = FIPS::getProjectSetting('db-spec-file');
 
-        $GLOBALS['fips_db_conn'] = $db_conn;
+            require $specfile; // connection info, hopefully store off webroot
 
-        if ($db_conn->connect_errno) {
-            Yes3::logDebugMessage(0, $db_conn->connect_error, 'Yes3Fips:connection error');
-            throw new Exception("Failed to connect to MySQL: (" . $db_conn->connect_errno . ") " . $db_conn->connect_error);
+            try {
+
+                $GLOBALS['fips_db_conn'] = new mysqli($host, $user, $password, $database);
+
+            } catch( Exception $e ) {
+
+                Yes3::logDebugMessage(0, $e->getMessage(), 'Yes3Fips:exception');
+                throw new Exception("Failed to connect to MySQL (" . $e->getMessage());
+            }
+
+            if ($GLOBALS['fips_db_conn']->connect_errno) {
+
+                Yes3::logDebugMessage(0, $db_conn->connect_error, 'Yes3Fips:connection error');
+                throw new Exception("Failed to connect to MySQL: (" . $GLOBALS['fips_db_conn']->connect_errno . ") " . $GLOBALS['fips_db_conn']->connect_error);
+            }
+                    
+            Yes3::logDebugMessage(0, print_r($GLOBALS['fips_db_conn'], true), 'Yes3Fips:DBCONN1');
         }
-                
-        Yes3::logDebugMessage(0, 'Db connection established', 'Yes3Fips');
+        else {
 
-        Yes3::logDebugMessage(0, print_r($GLOBALS, true), 'Yes3Fips: globals');
+            Yes3::logDebugMessage(0, print_r($GLOBALS['fips_db_conn'], true), 'Yes3Fips:DBCONN2');
+        }
+
+        //Yes3::logDebugMessage(0, print_r($GLOBALS, true), 'Yes3Fips: globals');
+        return true;
     }
 
     function hiMom(){
@@ -371,7 +391,9 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         $js .= file_get_contents( $this->getModulePath()."js/yes3.js" );   
         $js .= file_get_contents( $this->getModulePath()."js/{$libname}.js" );
 
-        $js .= "\n" . $this->initializeJavascriptModuleObject() . ";";
+        $jmo = $this->initializeJavascriptModuleObject();
+
+        //$js .= "\n" . $this->initializeJavascriptModuleObject() . ";";
 
         $js .= "\nYES3.moduleObject = " . $this->getJavascriptModuleObjectName() . ";";
 
@@ -382,6 +404,12 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         //$js .= "\nYES3.REDCapUserRights = " . json_encode( $this->getUser()->getRights() ) . ";\n";
 
         $js .= "\nYES3.userRights = " . json_encode( $this->yes3UserRights() ) . ";\n";
+
+        // modify the JMO ajax method to dump response to console
+
+        $js = str_replace(".then(response => {", ".then(response => {\nconsole.log(response);\n", $js);
+
+        Yes3::logDebugMessage(0, $jmo, "getCodeFor:JMO");
 
         $css .= file_get_contents( $this->getModulePath()."css/yes3.css" );
         $css .= file_get_contents( $this->getModulePath()."css/common.css" );
@@ -513,6 +541,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
     private function callApiSingle($data){
 
         $record = $data['record'];
+        $fips_linkage_id = $data['fips_linkage_id'];
         $benchmark = $data['benchmark'];
         $searchtype = $data['searchtype'];
 
@@ -527,20 +556,20 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         $io = $this->getIoObject();
 
-        $geoData = [];
+        $geoDataRecord = [];
 
         if ( $searchtype === "address" ){
 
             $address = $io->getAddressForApiCall( $record ) ;
-            $geoData = $this->geocodeSingleAddress( $addressType, $address, $benchmark, $vintage );
+            $geoDataRecord = $this->geocodeSingleAddress($fips_linkage_id, $addressType, $address, $benchmark, $vintage );
         }
         else {
 
             $location = $io->getLocationForApiCall( $record ) ;
-            $geoData = $this->geocodeSingleLocation( $location, $benchmark, $vintage );
+            $geoDataRecord = $this->geocodeSingleLocation($fips_linkage_id, $location, $benchmark, $vintage );
         }
 
-        return $geoData;
+        return $io->saveGeoData( [ $geoDataRecord ] );
     }
 
     private function callApiBatch(){
@@ -565,38 +594,14 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         //return file_get_contents($temp_file_name);
 
-        $geoData = $this->geocodeAddressFile($temp_file_name);
+        $geoDataRecords = $this->geocodeAddressFile($temp_file_name);
 
-        if ( !is_array($geoData) ){
+        if ( !is_array($geoDataRecords) ){
 
             return "No records";
         }
 
-        for($i=0; $i<count($geoData);$i++) {
-
-            if ( $geoData[$i]['fips_linkage_id'] ){
-
-                if ( $geoData[$i]['fips_match_type']==='Exact' ){
-
-                    $geoData[$i]['fips_match_status'] = FIO::MATCH_STATUS_CLOSED;
-                 }
-                else if ( $geoData[$i]['fips_match_type']==='Non_Exact' ){
-
-                    $geoData[$i]['fips_match_status'] = FIO::MATCH_STATUS_IN_PROCESS;
-                }
-                else {
-
-                    $geoData[$i]['fips_match_status'] = FIO::MATCH_STATUS_IN_PROCESS;
-                 }
-
-                $geoData[$i]['fips_match_user'] = $this->getUser()->getUsername();
-                $geoData[$i]['fips_match_timestamp'] = $timestamp;
-            }
-        }
-
-        //return print_r($geoData, true);
-
-        return $io->saveGeoData( $geoData );
+        return $io->saveGeoData( $geoDataRecords );
     }
 
     function prepareAddressElement( $s ){
@@ -604,7 +609,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         return trim(str_replace(["\r", "\t", "\n"], ["", " ", ", "], $s));
     }
 
-    private function geocodeSingleAddress( $addressType, $address, $benchmark, $vintage ){
+    private function geocodeSingleAddress($fips_linkage_id, $addressType, $address, $benchmark, $vintage ): array{
 
         if ( $addressType === "single" ){
 
@@ -613,7 +618,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
             $post = [
                 'benchmark' => $benchmark,  
                 'vintage' => $vintage,
-                'layers' => FIO::GEO_LAYERS,
+                'layers' => "all", //FIO::GEO_LAYERS,
                 'format' => 'json',
                 'address' => $this->prepareAddressElement( $address['fips_address'] )
             ];
@@ -625,7 +630,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
             $post = [
                 'benchmark' => $benchmark,  
                 'vintage' => $vintage,
-                'layers' => FIO::GEO_LAYERS,
+                'layers' => "all", //FIO::GEO_LAYERS,
                 'format' => 'json',
                 'street' => $address['fips_address_street'],
                 'city' => $address['fips_address_city'],
@@ -656,23 +661,89 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         if ( !Yes3::is_json_decodable($resultJSON) ){
 
-            return "[]";
+            return [];
         }
 
         $result = json_decode($resultJSON, true)['result'];
 
+        // add linkage id to input prop
+        $result['input']['linkage'] = ['fips_linkage_id' => $fips_linkage_id];
+
         Yes3::logDebugMessage($this->getProjectId(), print_r($result, true), "geocodeSingleAddress");
+
+        // we need the single address field to be populated even if components were input
+        if ( $result['input']['address']['street'] ) {
+
+            $result['input']['address']['address'] = 
+                trim($result['input']['address']['street']) . "\n" .
+                trim($result['input']['address']['city'])  . " " .
+                trim($result['input']['address']['state'])  . " " .
+                trim($result['input']['address']['zip'])
+            ;
+        }
 
         $input_address = strtoupper( $result['input']['address']['address'] );
 
-        foreach( $result['addressMatches'] as $addressMatch ){
+        $matched_address_summary = "";
+        $fips_code = "";
+        $same_fips_code = true;
+        $addressMatchesIndex = 0;
 
-            $matched_address = $addressMatch['matchedAddress'];
+        /**
+         * this loop will:
+         *  (1) accumulate a "matched address summary" of all matched addresses (address, fips, match result)
+         *  (2) add 'match_type' to the addressMatches structure
+         *  (3) for a tie, determine if all FIPS codes agree (same_fips_code)
+         */
+        for( $i=0; $i < count($result['addressMatches']); $i++ ){
 
-            $match_result = $this->compareAddresses($input_address, $matched_address);
+            $this_matched_address = strtoupper($result['addressMatches'][$i]['matchedAddress']);
+
+            $this_match_type = $this->compareAddresses($input_address, $this_matched_address);
+
+            $result['addressMatches'][$i]['match_type'] = $this_match_type;
+
+            // structure depends on benchmark apparantly
+
+            // current, acs
+            $this_fips_code = $result['addressMatches'][$i]['geographies']['2020 Census Blocks'][0]['GEOID'];
+
+            if ( !$this_fips_code ){
+
+                // 2020 Census
+                $this_fips_code = $result['addressMatches'][$i]['geographies']['Census Blocks'][0]['GEOID'];
+            }
+
+            $this_matched_address_summary = 
+                $this_matched_address
+                . "\n" . $this_match_type . ", fips=" . $this_fips_code
+            ;
+
+            if ( $this_match_type === FIO::MATCH_TYPE_EXACT ){
+
+                $addressMatchesIndex = $i;
+            }
+
+            if ( $matched_address_summary ) {
+                
+                $matched_address_summary .= "\n\n";
+
+                if ( $this_fips_code !== $fips_code ){
+
+                    $same_fips_code = false;
+                }
+
+                $fips_code = $this_fips_code;
+            }
+
+            $matched_address_summary .= $this_matched_address_summary;
         }
 
-        return $result;
+        $geoDataRecord = FIPS::getGeoDataRecordFromApiObject( $result, $matched_address_summary, $same_fips_code, $addressMatchesIndex);
+
+        Yes3::logDebugMessage($this->getProjectId(), print_r($geoDataRecord, true), "geocodeSingleAddress:geoDataRecord");
+
+        return $geoDataRecord;
     }  
     
     private function compareAddresses( $input_address, $matched_address ){
@@ -731,27 +802,27 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         $matched_state  = trim($matched_parts[2]);
         $matched_zip    = trim($matched_parts[3]);
 
-        $match_result = (
+        $match_type = (
             strpos($input_street, $matched_street) !== false &&
             $input_city === $matched_city && 
             $input_state === $matched_state &&
             strpos($input_zip, $matched_zip) === 0
-        ) ? "Exact" : "Non_Exact";
+        ) ? FIO::MATCH_TYPE_EXACT : FIO::MATCH_TYPE_FUZZY;
 
         $msg = 
             "street: [{$input_street}] [{$matched_street}]"
         . "\ncity  : [{$input_city}] [{$matched_city}]"
         . "\nstate : [{$input_state}] [{$matched_state}]"
         . "\nzip   : [{$input_zip}] [{$matched_zip}]"
-        . "\nMATCH RESULT = " . $match_result
+        . "\nMATCH TYPE = " . $match_type
         ;
 
         Yes3::logDebugMessage($this->getProjectId(), $msg, "compareAddresses");
 
-        return $match_result;
+        return $match_type;
     }
 
-    private function geocodeSingleLocation( $location, $benchmark, $vintage ){
+    private function geocodeSingleLocation($fips_linkage_id,  $location, $benchmark, $vintage ){
 
         $target_url = "https://geocoding.geo.census.gov/geocoder/geographies/coordinates";
 
@@ -774,7 +845,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         try {
 
-            $result = curl_exec ($ch);
+            $resultJSON = curl_exec ($ch);
 
         } catch(exception $e) {
 
@@ -784,9 +855,34 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         curl_close ($ch);
 
-        Yes3::logDebugMessage($this->getProjectId(), $result, "geocodeSingleLocation");
+        if ( !Yes3::is_json_decodable($resultJSON) ){
 
-        return $result;
+            return [];
+        }
+
+        $result = json_decode($resultJSON, true)['result'];
+
+        // add linkage id to input prop
+        $result['input']['linkage'] = ['fips_linkage_id' => $fips_linkage_id];
+
+        Yes3::logDebugMessage($this->getProjectId(), print_r($result, true), "geocodeSingleLocation");
+
+        // we need the single address field to be populated even if components were input
+        if ( $result['input']['address']['street'] ) {
+
+            $result['input']['address']['address'] = 
+                trim($result['input']['address']['street']) . "\n" .
+                trim($result['input']['address']['city'])  . " " .
+                trim($result['input']['address']['state'])  . " " .
+                trim($result['input']['address']['zip'])
+            ;
+        }
+
+        $geoDataRecord = FIPS::getGeoDataRecordFromApiObject( $result );
+
+        Yes3::logDebugMessage($this->getProjectId(), print_r($geoDataRecord, true), "geocodeSingleLocation:geoDataRecord");
+
+        return $geoDataRecord;
     }    
 
     /**
@@ -795,7 +891,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
      * @param mixed $addressFilename 
      * @return string|array 
      */
-    private function geocodeAddressFile( $addressFilename ){
+    private function geocodeAddressFile( $addressFilename ): array {
 
         $target_url = "https://geocoding.geo.census.gov/geocoder/geographies/addressbatch";
 
@@ -838,11 +934,16 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         foreach($rows as $row){
 
-            $fipsArray = str_getcsv($row);
+            $apiCsvRow = str_getcsv($row);
 
-            if ( is_array($fipsArray) && count($fipsArray) >= 3 ){
+            if ( is_array($apiCsvRow) && count($apiCsvRow) >= 3 ){
 
-               $geoData[] = FIPS::putGeoRecord($fipsArray);
+                $geoDataRecord = FIPS::getGeoDataRecordFromApiCsvRow($apiCsvRow);
+
+                if ( $geoDataRecord['fips_linkage_id'] ) {
+
+                    $geoData[] = $geoDataRecord;
+                }
             }
         }
 
@@ -987,6 +1088,8 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         $page_full, 
         $user_id, 
         $group_id){
+
+        //include("foo.bar");
 
         if ($action==="get-fips-records") {
 

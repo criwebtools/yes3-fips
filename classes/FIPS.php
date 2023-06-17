@@ -1,97 +1,165 @@
 <?php
 
-
 namespace Yale\Yes3Fips;
 
 use Exception;
 use REDCap;
 use ExternalModules\ExternalModules;
 use Yale\Yes3Fips\Yes3;
+use Yale\Yes3Fips\GeoRecord;
 
 class FIPS {
 
     public const MODULE_DIRECTORY_PREFIX = 'yes3_fips';
 
-    static function putGeoRecord( $fipsArray ){
+    /**
+     * Returns a geoDataRecord from a CSV row returned by the batch API
+     */
+    
+    static function getGeoDataRecordFromApiCsvRow( $apiCsvRow ): array {
 
-        $k = count( $fipsArray );
+        $geoRecord = new GeoRecord();
+
+        $k = count( $apiCsvRow );
 
         if ( $k < 3 ) {
 
-            return;
+            return [];
         }
 
-        $geoRecord = [
-            "fips_linkage_id" => "",
-            "fips_address_submitted" => "", 
-            "fips_match_result" => "",
-            "fips_match_type" => "",
-            "fips_address_matched" => "",
-            "fips_longitude" => "",
-            "fips_latitude" => "",
-            "fips_tigerlineid" => "",
-            "fips_tigerlineside" => "",
-            "fips_state" => "",             
-            "fips_county" => "",            
-            "fips_tract" => "",             
-            "fips_block" => "",    
-            "fips_code" => "",              
-            "fips_census_block_group" => ""
-        ];
+        //Yes3::logDebugMessage(0, print_r($apiCsvRow, true), 'getGeoDataRecordFromApiCsvRow' );
 
-        $geoRecord['fips_linkage_id'] = $fipsArray[0];
-        $geoRecord['fips_address_submitted'] = $fipsArray[1];
-        $geoRecord['fips_match_result'] = $fipsArray[2];
+        $geoRecord->put_fips_linkage_id( $apiCsvRow[0] );
+        $geoRecord->put_fips_address_submitted( $apiCsvRow[1] );
+        $geoRecord->put_fips_match_result( $apiCsvRow[2] );
 
-        if ( $k >= 4 ) $geoRecord['fips_match_type'] = $fipsArray[3];
-        if ( $k >= 5 ) $geoRecord['fips_address_matched'] = $fipsArray[4];
+        if ( $k >= 4 ) $geoRecord->put_fips_match_type( $apiCsvRow[3] );
+        if ( $k >= 5 ) $geoRecord->put_fips_address_matched( $apiCsvRow[4] );
         if ( $k >= 6 ) {
 
-            $longlat = explode(',', $fipsArray[5]);
+            $longlat = explode(',', $apiCsvRow[5]);
 
-            $geoRecord['fips_longitude'] = $longlat[0];
-            $geoRecord['fips_latitude'] = $longlat[1];
+            $geoRecord->put_fips_longitude( $longlat[0] );
+            $geoRecord->put_fips_latitude( $longlat[1] );
         }
-        if ( $k >= 7 ) $geoRecord['fips_tigerlineid'] = $fipsArray[6];
-        if ( $k >= 8 ) $geoRecord['fips_tigerlineside'] = $fipsArray[7];
-        if ( $k >= 9 ) $geoRecord['fips_state'] = $fipsArray[8];
-        if ( $k >= 10 ) $geoRecord['fips_county'] = $fipsArray[9];
-        if ( $k >= 11 ) $geoRecord['fips_tract'] = $fipsArray[10];
-        if ( $k >= 12 ) $geoRecord['fips_block'] = $fipsArray[11];
+        if ( $k >= 7 ) $geoRecord->put_fips_tigerlineid( $apiCsvRow[6] );
+        if ( $k >= 8 ) $geoRecord->put_fips_tigerlineside( $apiCsvRow[7] );
+        if ( $k >= 9 ) $geoRecord->put_fips_state( $apiCsvRow[8] );
+        if ( $k >= 10 ) $geoRecord->put_fips_county( $apiCsvRow[9] );
+        if ( $k >= 11 ) $geoRecord->put_fips_tract( $apiCsvRow[10] );
+        if ( $k >= 12 ) $geoRecord->put_fips_block( $apiCsvRow[11] );
 
-        if ( $k > 12 ){
+        return $geoRecord->put_geo_data();
+    }
 
-            for($i=11; $i<$k; $i++){
+    /**
+     * apiObject: the decoded object returned by the single address/location API
+     * matched_address_summary: a more detailed summary of the matched address(es), from Yes3Fips->geocodeSingleAddress()
+     * same_fips_code: all matched addresses returned the same FIPS code
+     * addressMatchesIndex: the index of the address having the best match
+     * 
+     * @param mixed $apiObject 
+     * @param string $matched_address_summary 
+     * @param bool $same_fips_code 
+     * @param int $addressMatchesIndex 
+     * @return array 
+     */
+    static function getGeoDataRecordFromApiObject( $apiObject, $matched_address_summary="", $same_fips_code=false, $addressMatchesIndex=0 ): array{
 
-                $geoRecord['col'.($i+1)] = $fipsArray[$i];
+        $geoRecord = new GeoRecord();
+
+        $geoRecord->put_fips_linkage_id( $apiObject['input']['linkage']['fips_linkage_id'] );
+
+        if ( $apiObject['input']['address']['address'] ) {
+            
+            $geoRecord->put_fips_address_submitted( $apiObject['input']['address']['address'] );
+
+            $fips_match_result = FIO::MATCH_RESULT_UNMATCHED;
+
+            if ( $apiObject['addressMatches'] ){
+
+                if ( count($apiObject['addressMatches']) == 1 ){
+
+                    $fips_match_result = FIO::MATCH_RESULT_MATCHED;
+                }
+                else if ( count($apiObject['addressMatches']) > 1 ){
+
+                    $fips_match_result = FIO::MATCH_RESULT_TIE;
+                }
             }
+
+            $geoRecord->put_fips_match_result($fips_match_result);
         }
 
-        $geoRecord['fips_code'] = 
-            str_pad($geoRecord['fips_state'],  2, '0', STR_PAD_LEFT).
-            str_pad($geoRecord['fips_county'], 3, '0', STR_PAD_LEFT).
-            str_pad($geoRecord['fips_tract'],  6, '0', STR_PAD_LEFT).
-            str_pad($geoRecord['fips_block'],  4, '0', STR_PAD_LEFT)
-        ;
-
-        $geoRecord['fips_census_block_group'] = 
-            str_pad($geoRecord['fips_state'],  2, '0', STR_PAD_LEFT).
-            str_pad($geoRecord['fips_county'], 3, '0', STR_PAD_LEFT).
-            str_pad($geoRecord['fips_tract'],  6, '0', STR_PAD_LEFT).
-            substr($geoRecord['fips_block'], 0, 1)
-        ;
-
-        if ( $geoRecord['fips_code'] === str_repeat('0', strlen($geoRecord['fips_code'])) ) {
-
-            $geoRecord['fips_code'] = '';
+        if ( $apiObject['addressMatches'] ) {
+            
+            $geoRecord->put_fips_match_type( $apiObject['addressMatches'][$addressMatchesIndex]['match_type'] );
+            $geoRecord->put_fips_address_matched( $matched_address_summary );
         }
 
-        if ( $geoRecord['fips_census_block_group'] === str_repeat('0', strlen($geoRecord['fips_census_block_group'])) ) {
+        if ( $apiObject['addressMatches'][$addressMatchesIndex]['coordinates'] ) {
 
-            $geoRecord['fips_census_block_group'] = '';
+            $geoRecord->put_fips_longitude( $apiObject['addressMatches'][$addressMatchesIndex]['coordinates']['x'] );
+            $geoRecord->put_fips_latitude( $apiObject['addressMatches'][$addressMatchesIndex]['coordinates']['y'] );
         }
 
-        return $geoRecord;
+        if ( $apiObject['addressMatches'][$addressMatchesIndex]['tigerLine'] ) {
+
+            $geoRecord->put_fips_tigerlineid( $apiObject['addressMatches'][$addressMatchesIndex]['tigerLine']['tigerLineId'] );
+            $geoRecord->put_fips_tigerlineside( $apiObject['addressMatches'][$addressMatchesIndex]['tigerLine']['side'] );
+        }
+
+        if ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['2020 Census Blocks'] ) {
+
+            $geoRecord->put_fips_state ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['2020 Census Blocks'][0]['STATE'] );
+            $geoRecord->put_fips_county( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['2020 Census Blocks'][0]['COUNTY'] );
+            $geoRecord->put_fips_tract ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['2020 Census Blocks'][0]['TRACT'] );
+            $geoRecord->put_fips_block ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['2020 Census Blocks'][0]['BLOCK'] );
+            $geoRecord->put_fips_code  ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['2020 Census Blocks'][0]['GEOID'] );
+        }
+        else if ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['Census Blocks'] ) {
+
+            $geoRecord->put_fips_state ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['Census Blocks'][0]['STATE'] );
+            $geoRecord->put_fips_county( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['Census Blocks'][0]['COUNTY'] );
+            $geoRecord->put_fips_tract ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['Census Blocks'][0]['TRACT'] );
+            $geoRecord->put_fips_block ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['Census Blocks'][0]['BLOCK'] );
+            $geoRecord->put_fips_code  ( $apiObject['addressMatches'][$addressMatchesIndex]['geographies']['Census Blocks'][0]['GEOID'] );
+        }
+        else if ( $apiObject['geographies']['2020 Census Blocks'] ) {
+
+            $geoRecord->put_fips_state ( $apiObject['geographies']['2020 Census Blocks'][0]['STATE'] );
+            $geoRecord->put_fips_county( $apiObject['geographies']['2020 Census Blocks'][0]['COUNTY'] );
+            $geoRecord->put_fips_tract ( $apiObject['geographies']['2020 Census Blocks'][0]['TRACT'] );
+            $geoRecord->put_fips_block ( $apiObject['geographies']['2020 Census Blocks'][0]['BLOCK'] );
+            $geoRecord->put_fips_code  ( $apiObject['geographies']['2020 Census Blocks'][0]['GEOID'] );
+        }
+        else if ( $apiObject['geographies']['Census Blocks'] ) {
+
+            $geoRecord->put_fips_state ( $apiObject['geographies']['Census Blocks'][0]['STATE'] );
+            $geoRecord->put_fips_county( $apiObject['geographies']['Census Blocks'][0]['COUNTY'] );
+            $geoRecord->put_fips_tract ( $apiObject['geographies']['Census Blocks'][0]['TRACT'] );
+            $geoRecord->put_fips_block ( $apiObject['geographies']['Census Blocks'][0]['BLOCK'] );
+            $geoRecord->put_fips_code  ( $apiObject['geographies']['Census Blocks'][0]['GEOID'] );
+        }
+
+        if ( $apiObject['input']['location'] ){
+
+            if ( $geoRecord->get_fips_code() ){
+
+                $geoRecord->put_fips_match_result( FIO::MATCH_RESULT_MATCHED );
+                $geoRecord->put_fips_match_type( FIO::MATCH_TYPE_LOCATION );
+            }
+            else {
+
+                $geoRecord->put_fips_match_result( FIO::MATCH_RESULT_UNMATCHED );
+                //$geoRecord->put_fips_match_type( FIO::MATCH_TYPE_LOCATION );
+            }
+
+            $geoRecord->put_fips_longitude( $apiObject['input']['location']['x'] );
+            $geoRecord->put_fips_latitude ( $apiObject['input']['location']['y'] );
+        }
+
+        return $geoRecord->put_geo_data();
     }
 
     static function getCityStateZip( $s, &$city, &$state, &$zip ): bool {
@@ -107,7 +175,7 @@ class FIPS {
             'CT' => 'CONNECTICUT',        
             'DE' => 'DELAWARE',           
             'DC' => 'DISTRICT OF COLUMBIA',
-            'FL' => 'FLORIDA',            
+            'FL' => 'FLORIDA',           
             'GA' => 'GEORGIA',            
             'GU' => 'GUAM',               
             'HI' => 'HAWAII',             

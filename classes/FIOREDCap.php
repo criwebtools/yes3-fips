@@ -127,25 +127,25 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
         $nMatchedNonExact = 0;
         $nUnmatched = 0;
 
-        foreach($geoData as $geoRecord){
+        foreach($geoData as $geoDataRecord){
 
-            if ( $geoRecord['fips_linkage_id'] ){
+            if ( $geoDataRecord['fips_linkage_id'] ){
 
-                $record = $this->getRecordFromLinkageId( $project_id, $event_id, $geoRecord['fips_linkage_id']);
+                $record = $this->getRecordFromLinkageId( $project_id, $event_id, $geoDataRecord['fips_linkage_id']);
 
                 $n++;
 
-                if ($geoRecord['fips_match_type']==='Exact') $nMatchedExact++;
+                if ($geoDataRecord['fips_match_type']===FIO::MATCH_TYPE_EXACT) $nMatchedExact++;
 
-                elseif ($geoRecord['fips_match_type']==='Non_Exact') $nMatchedNonExact++;
+                elseif ($geoDataRecord['fips_match_type']===FIO::MATCH_TYPE_FUZZY) $nMatchedNonExact++;
 
                 else $nUnmatched++;
 
-                $geoRecord['fips_complete'] = ($geoRecord['fips_match_status'] === FIO::MATCH_STATUS_CLOSED) ? FIO::FORM_COMPLETE : FIO::FORM_INCOMPLETE;
-
-                $records[$record][$event_id] = $geoRecord;
+                $records[$record][$event_id] = $geoDataRecord;
             }
         }
+
+        Yes3::logDebugMessage(0, "_SESSION[foo]=".$_SESSION['foo'], "saveGeoData");
 
         $rc = REDCap::saveData(
             $project_id,
@@ -206,6 +206,7 @@ SELECT d.`record`
     , IFNULL(ab.`value`, '') AS fips_tigerlineid
     , IFNULL(ac.`value`, '') AS fips_tigerlineside
     , IFNULL(ad.`value`, '') AS fips_census_block_group
+    , IFNULL(ae.`value`, '') AS fips_state_county
 
 FROM redcap_data d
 
@@ -232,6 +233,7 @@ FROM redcap_data d
     LEFT JOIN redcap_data ab ON ab.project_id=d.project_id AND ab.event_id=d.event_id AND ab.`record`=d.`record` AND ab.field_name='fips_tigerlineid'
     LEFT JOIN redcap_data ac ON ac.project_id=d.project_id AND ac.event_id=d.event_id AND ac.`record`=d.`record` AND ac.field_name='fips_tigerlineside'
     LEFT JOIN redcap_data ad ON ad.project_id=d.project_id AND ad.event_id=d.event_id AND ad.`record`=d.`record` AND ad.field_name='fips_census_block_group'
+    LEFT JOIN redcap_data ae ON ae.project_id=d.project_id AND ae.event_id=d.event_id AND ae.`record`=d.`record` AND ae.field_name='fips_state_county'
 
 WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=? AND d.`value` IS NOT NULL
         ";
@@ -726,8 +728,8 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_pobox`,
             SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_deferred`,
             SUM(IF(IFNULL(s.`value`, 0)=?, 1, 0)) AS `summary_closed`,           
-            SUM(IF(IFNULL(s.`value`, 0)=? AND IFNULL(m.`value`, '')='Match', 1, 0)) AS `summary_closed_matched`,
-            SUM(IF(IFNULL(s.`value`, 0)=? AND IFNULL(m.`value`, '')<>'Match', 1, 0)) AS `summary_closed_unmatched`           
+            SUM(IF(IFNULL(s.`value`, 0)=? AND IFNULL(m.`value`, '')=?, 1, 0)) AS `summary_closed_matched`,
+            SUM(IF(IFNULL(s.`value`, 0)=? AND IFNULL(m.`value`, '')<>?, 1, 0)) AS `summary_closed_unmatched`           
         FROM redcap_data d
             LEFT JOIN redcap_data s ON s.project_id=d.project_id AND s.event_id=d.event_id AND s.record=d.record AND s.field_name='fips_match_status'
             LEFT JOIN redcap_data m ON m.project_id=d.project_id AND m.event_id=d.event_id AND m.record=d.record AND m.field_name='fips_match_result'
@@ -743,7 +745,9 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             FIO::MATCH_STATUS_DEFERRED,
             FIO::MATCH_STATUS_CLOSED,
             FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_RESULT_MATCHED,
             FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_RESULT_MATCHED,
             $project_id,
             $event_id
         ];

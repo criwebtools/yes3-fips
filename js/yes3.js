@@ -672,8 +672,6 @@ YES3.whackREDCapUI = function(){
  */
 YES3.ajax = ( action, parms, callBackFn )=>{
 
-    console.log('ajax', action, parms);
-
     YES3.moduleObject
     .ajax(action, parms)
     .then(function(response){
@@ -682,9 +680,15 @@ YES3.ajax = ( action, parms, callBackFn )=>{
     })
     .catch(function(err){
 
-        alert("AJAX error! Check console log.");
+        console.error('YES3 AJAX ERROR REPORT', err);
 
-        console.error(err);
+        /**
+         * if this is the hacked version, log the response
+         */
+        if ( typeof err === 'object' && typeof err.responsetext === 'string' ){
+
+            YES3.moduleObject.log(err.responsetext, {'log_type':'AJAX RESPONSE TEXT'});
+        }
     });
 }
 

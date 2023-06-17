@@ -31,6 +31,7 @@ interface FIO
 
     public const MATCH_TYPE_EXACT = 'Exact';
     public const MATCH_TYPE_FUZZY = 'Non_Exact';
+    public const MATCH_TYPE_LOCATION = 'Location';
 
     public const FORM_COMPLETE = '2';
     public const FORM_INCOMPLETE = '1';

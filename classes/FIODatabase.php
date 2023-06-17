@@ -6,12 +6,13 @@ use Exception;
 use mysqli;
 use Yale\Yes3Fips\Yes3;
 use Yale\Yes3Fips\FIPS;
+use Yale\Yes3Fips\FIODbConnection;
+
+//FIODbConnection::initializeConnection();
 
 class FIODatabase implements \Yale\Yes3Fips\FIO {
 
     public function getAddressForApiCall(string $record): array {
-
-        $address = [];
 
         $sql = "
         SELECT 
@@ -33,8 +34,6 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
     }
 
     public function getLocationForApiCall(string $record): array {
-
-        $address = [];
 
         $sql = "
         SELECT 
@@ -67,7 +66,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         ";
 
         $params = [ self::MATCH_STATUS_NEXT_API_BATCH ];
-
+/*
         $diag = print_r(
             [
                 'sql' => $sql,
@@ -77,8 +76,8 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             , true
             );
 
-        //return $diag;
-
+        return $diag;
+*/
         $yy = self::dbFetchRecords($sql, $params);
 
         $temp_file_name = tempnam(sys_get_temp_dir(), 'fips') . '.csv';
@@ -116,15 +115,15 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         $nMatchedNonExact = 0;
         $nUnmatched = 0;
 
-        foreach($geoData as $geoRecord){
+        foreach($geoData as $geoDataRecord){
 
-            if ( $geoRecord['fips_linkage_id'] ){
+            if ( $geoDataRecord['fips_linkage_id'] ){
 
                 $n++;
 
-                if ($geoRecord['fips_match_type']==='Exact') $nMatchedExact++;
+                if ($geoDataRecord['fips_match_type']===FIO::MATCH_TYPE_EXACT) $nMatchedExact++;
 
-                elseif ($geoRecord['fips_match_type']==='Non_Exact') $nMatchedNonExact++;
+                elseif ($geoDataRecord['fips_match_type']===FIO::MATCH_TYPE_FUZZY) $nMatchedNonExact++;
 
                 else $nUnmatched++;
 
@@ -133,7 +132,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
                 $params = [];
                 $nP = 0;
         
-                foreach($geoRecord as $colname=>$value){
+                foreach($geoDataRecord as $colname=>$value){
 
                     if ( $colname !== 'fips_linkage_id' ){
             
@@ -152,27 +151,29 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
                 $sql .= " WHERE fips_linkage_id = ? LIMIT 1";
 
-                $params[] =  $geoRecord['fips_linkage_id'];
+                $params[] =  $geoDataRecord['fips_linkage_id'];
 
                 $rc = self::dbQuery($sql, $params, self::QRY_RETURN_RETCODE);
 
                 if ( $rc !== "success" ){
 
                     return print_r([
+                        'message'=>'QUERY ERROR',
+                        'error'=>$rc,
                         'sql'=>$sql,
                         'params'=>$params,
-                        'geoRecord' => $geoRecord
+                        'geoRecord' => $geoDataRecord
                     ], true);
 
                     return $rc;
                 }
             }
         }
-        
+       
         return "API call succeeded.<br>{$n} record(s) processed.<br>{$nMatchedExact} exact match(es).<br>{$nMatchedNonExact} fuzzy match(es).<br>{$nUnmatched} not matched.";
     }
 
-    public function getFIPSrecords(string $filter, string $record, int $limit=50000): array {
+    public function getFIPSrecords(string $filter, string $record, int $limit=5000): array {
 
         if ( $record ){
 
@@ -538,8 +539,8 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_pobox`,
             SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_deferred`,
             SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_closed`,           
-            SUM(IF(IFNULL(`fips_match_status`, 0)=? AND IFNULL(`fips_match_result`, '')='Match', 1, 0)) AS `summary_closed_matched`,
-            SUM(IF(IFNULL(`fips_match_status`, 0)=? AND IFNULL(`fips_match_result`, '')<>'Match', 1, 0)) AS `summary_closed_unmatched` 
+            SUM(IF(IFNULL(`fips_match_status`, 0)=? AND IFNULL(`fips_match_result`, '')=?, 1, 0)) AS `summary_closed_matched`,
+            SUM(IF(IFNULL(`fips_match_status`, 0)=? AND IFNULL(`fips_match_result`, '')<>?, 1, 0)) AS `summary_closed_unmatched` 
         FROM fom_addresses
         ";
 
@@ -552,90 +553,77 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             FIO::MATCH_STATUS_DEFERRED,
             FIO::MATCH_STATUS_CLOSED,
             FIO::MATCH_STATUS_CLOSED,
-            FIO::MATCH_STATUS_CLOSED
+            FIO::MATCH_RESULT_MATCHED,
+            FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_RESULT_MATCHED
         ];
 
         return self::dbFetchRecord($sql, $params);
     }
-
-    private static function getConn()
-    {
-        $host = ""; $user = ""; $password = ""; $database = "";
-
-        $specfile = FIPS::getProjectSetting('db-spec-file');
-        
-        require $specfile; // connection info, hopefully store off webroot
-
-        $db_conn = new mysqli($host, $user, $password, $database);
-
-        if ( $db_conn->connect_errno) {
-
-            Yes3::logDebugMessage(0,  $db_conn->connect_error, 'FIODbConnection');
-            throw new Exception("Failed to connect to MySQL: (" .  $db_conn->connect_errno . ") " .  $db_conn->connect_error);
-        }
-
-        return $db_conn;
-    }
-
-    public static function dbQuery($sql, $params=[], $returnType=self::QRY_RETURN_RETCODE)
-    {
-        //$db_conn = self::getConn();
-
-        $host = ""; $user = ""; $password = ""; $database = "";
-
-        $specfile = FIPS::getProjectSetting('db-spec-file');
-        
-        require $specfile; // connection info, hopefully store off webroot
-
-        $db_conn = new mysqli($host, $user, $password, $database);
-
-        if ( $db_conn->connect_errno) {
-
-            //Yes3::logDebugMessage(0,  $db_conn->connect_error, 'FIODbConnection');
-            throw new Exception("Failed to connect to MySQL: (" .  $db_conn->connect_errno . ") " .  $db_conn->connect_error);
-        }
-
-        if ( $stmt = $db_conn->prepare($sql) ) {
-
-            if ($params) {
-                $types = str_repeat('s', count($params)); // all string types: must assume proper formatting for floats, dates etc
-                $stmt->bind_param($types, ...$params); // '...' unpacks the array into individual args
-            }
-
-            if ($retcode = $stmt->execute()){
-
-                if ($returnType == self::QRY_RETURN_RESULTSET){
-                    return $stmt->get_result();
-                }
-
-                if ($returnType == self::QRY_RETURN_INSERT_ID){
-                    return (int)$db_conn->insert_id;
-                }
-
-                if ($returnType == self::QRY_RETURN_ROWS_AFFECTED){
-                    return (int)$db_conn->affected_rows;
-                }
-
-                if ($returnType == self::QRY_RETURN_RETCODE){
-                    return "success";
-                }
-
-                return $retcode;
-            }
-        }
  
+    public static function dbQuery($sql, $params=[], $returnType=self::QRY_RETURN_RETCODE)
+    {        
+        $db_conn = FIODbConnection::getConn();
+        
+        $stmt = $db_conn->prepare($sql);
+
+        if ( !$stmt ){
+
+            throw new Exception("dbQuery statement preparation failed: " .  $sql);
+        }
+
+        if ($params) {
+
+            $types = str_repeat('s', count($params)); // all string types: must assume proper formatting for floats, dates etc
+            $retcode = $stmt->bind_param($types, ...$params); // '...' unpacks the array into individual args
+
+            if ( !$retcode ){
+
+                throw new Exception("dbQuery prepared statement binding failed: " .  $sql);
+            }
+        }
+
+        $retcode = $stmt->execute();
+
+        if ( !$retcode ){
+
+            throw new Exception("dbQuery execution failed for : " .  $sql);
+        }
+
+        if ($returnType == self::QRY_RETURN_RESULTSET){
+
+            $result = $stmt->get_result();
+
+            if ( $result === false ){
+
+                throw new Exception("dbQuery get_result() failed for : " .  $sql);
+            }
+
+            return $result;
+        }
+
+        if ($returnType == self::QRY_RETURN_INSERT_ID){
+
+            return (int)$db_conn->insert_id;
+        }
+
+        if ($returnType == self::QRY_RETURN_ROWS_AFFECTED){
+
+            return (int)$db_conn->affected_rows;
+        }
+
+        if ($returnType == self::QRY_RETURN_RETCODE){
+
+            return "success";
+        }
+
         if ( $db_conn->error ){
 
             return "MySQL error reported: " . $db_conn->error;
-            throw new Exception("dbConn reports MySQL: " .  $db_conn->error);
-    
-            //$logEntry = "SQL: " . $sql;
-            //$logEntry .= "\nparams = [" . print_r($params, true) . "]";
-            //$logEntry .= "\nerror: " . $db_conn->error;
-            //Yes3::logDebugMessage('0', $logEntry, 'dbQuery error');
+            throw new Exception("dbQuery reports MySQL error: " .  $db_conn->error);
         }
-    
-        throw new Exception("dbConn failed for unknown reason");
+
+        throw new Exception("dbQuery failed for " .  $sql);
     }
     
     public static function dbFetchRecords($sql, $parameters = [])

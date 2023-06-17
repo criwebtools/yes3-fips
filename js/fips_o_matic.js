@@ -380,7 +380,7 @@ FIPS.populateTheEditor = function(response){
         })
     ;
 
-    const $panel = YES3.openPanel('fips-editor', false, 0, 0, 1);
+    const $panel = YES3.openPanel('fips-editor', false, 0, 0, 1, 0, 1200);
 
     const $header = $('div#fips-editor-header');
 
@@ -463,9 +463,10 @@ FIPS.openEditor = function( record ){
         $tbody.append( FIPS.fipsEditorRow(fields[i].field_name, fields[i].label, fields[i].type, editable, fields[i].size, choices) );
     }
 
-    FIPS.showEditorAPIoption();
+    //FIPS.showEditorAPIoption();
 
-    FIPS.hideEditorAPIpanel();
+    //FIPS.hideEditorAPIpanel();
+    FIPS.showEditorAPIpanel();
 
     FIPS.loadRecordIntoEditor( record );
 }
@@ -802,6 +803,7 @@ FIPS.callApiFromEditor = function(){
     FIPS.postEditorMessage("WAIT");
 
     const record = $('#fips-editor input#record').val();
+    const fips_linkage_id = $('#fips-editor input#fips_linkage_id').val();
     const benchmark = $('select#fips-editor-api-benchmark').val();
     const searchtype = $('select#fips-editor-api-searchtype').val();
 
@@ -809,6 +811,7 @@ FIPS.callApiFromEditor = function(){
         'call-api-single',
         {
             record: record,
+            fips_linkage_id: fips_linkage_id,
             benchmark: benchmark,
             searchtype: searchtype
         },
@@ -968,4 +971,5 @@ $(function(){
     FIPS.getTheListFor('inprocess');
 
     $(window).trigger('resize');
+
 })

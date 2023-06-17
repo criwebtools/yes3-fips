@@ -180,42 +180,6 @@
                 "field": "data-source",
                 "value": "database"
             }
-        },
-        {
-            "key": "db-host",
-            "name": "Database host",
-            "type": "text",
-            "branchingLogic": {
-                "field": "data-source",
-                "value": "database"
-            }
-        },
-        {
-            "key": "db-user",
-            "name": "Database user",
-            "type": "text",
-            "branchingLogic": {
-                "field": "data-source",
-                "value": "database"
-            }
-        },
-        {
-            "key": "db-password",
-            "name": "Database user password",
-            "type": "password",
-            "branchingLogic": {
-                "field": "data-source",
-                "value": "database"
-            }
-        },
-        {
-            "key": "db-database",
-            "name": "Database",
-            "type": "text",
-            "branchingLogic": {
-                "field": "data-source",
-                "value": "database"
-            }
         }
     ],
 
@@ -229,6 +193,8 @@
             }
         ]
     },
+
+    "enable-ajax-logging": true,
 
     "auth-ajax-actions":[
         "get-fips-records",
@@ -249,8 +215,8 @@
 
     "compatibility": {
         "php-version-min": "7.4",
-        "redcap-version-min": "12.0.4"
+        "redcap-version-min": "13.3.0"
     },
 
-    "framework-version": 9
+    "framework-version": 11
 }
