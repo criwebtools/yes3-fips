@@ -25,8 +25,14 @@ const FIPS = {
         MATCH_STATUS_PENDING:'0',
         MATCH_STATUS_NEXT_API_BATCH: '1',
         MATCH_STATUS_IN_PROCESS: '2',
-        MATCH_STATUS_CLOSED: '3'
-    }
+        MATCH_STATUS_CLOSED: '3',
+
+        MATCH_RESULT_MATCHED: 'Match',
+        MATCH_RESULT_UNMATCHED: 'No_Match',
+        MATCH_RESULT_TIE: 'Tie'
+    },
+
+    'reservations': []
 };
 
 FIPS.hideRefreshElement = function(){
@@ -42,6 +48,8 @@ FIPS.showRefreshElement = function(){
 FIPS.showListCount = function( n ){
 
     $('#fips-list-count').html(`n = ${n}`);
+
+    //FIPS.postMessage( `${n} record(s) loaded.`);
 }
 
 FIPS.hideListCount = function( n ){
@@ -173,16 +181,16 @@ FIPS.setListeners = function(){
     });
 }
 
-FIPS.getTheSummary = function(){
+FIPS.getTheSummaries = function(){
 
     YES3.ajax(
         'get-summary',
         {},
-        FIPS.populateTheSummary
+        FIPS.populateTheSummaries
     );
 }
 
-FIPS.populateTheSummary = function(response){
+FIPS.populateTheSummaries = function(response){
 
     $('td#summary_n').html(response.summary_n);
 
@@ -210,9 +218,28 @@ FIPS.populateTheSummary = function(response){
     $('td#summary_closed_unmatched').html(response.summary_closed_unmatched);
     $('td#summary_closed_unmatched_pct').html( FIPS.percentOf(response.summary_closed_unmatched, response.summary_closed, 'closed') );
 
+    $('td#reservation_n').html(response.reservation_n);
+
+    $('td#reservation_inprocess').html(response.reservation_inprocess);
+    $('td#reservation_inprocess_pct').html( FIPS.percentOf(response.reservation_inprocess, response.reservation_n, 'total') );
+
+    $('td#reservation_deferred').html(response.reservation_deferred);
+    $('td#reservation_deferred_pct').html( FIPS.percentOf(response.reservation_deferred, response.reservation_n, 'total') );
+
+    $('td#reservation_closed').html(response.reservation_closed);
+    $('td#reservation_closed_pct').html( FIPS.percentOf(response.reservation_closed, response.reservation_n, 'total') );
+
+    $('td#reservation_closed_matched').html(response.reservation_closed_matched);
+    $('td#reservation_closed_matched_pct').html( FIPS.percentOf(response.reservation_closed_matched, response.reservation_closed, 'total') );
+
+    $('td#reservation_closed_unmatched').html(response.reservation_closed_unmatched);
+    $('td#reservation_closed_unmatched_pct').html( FIPS.percentOf(response.reservation_closed_unmatched, response.reservation_closed, 'total') );
+
     FIPS.showOrHideApiElements( response.summary_apibatch );
 
-    console.log('populateTheSummary', response);
+    FIPS.displayReservationOptions();
+
+    //console.log('populateTheSummaries', response);
 }
 
 FIPS.showOrHideApiElements = function( n ){
@@ -220,10 +247,12 @@ FIPS.showOrHideApiElements = function( n ){
     if ( parseInt(n) > 0 ){
 
         $('.fips-api-batch').show();
+        $('.fips-no-api-batch').hide();
     }
     else {
 
         $('.fips-api-batch').hide();
+        $('.fips-no-api-batch').show();
     }
 }
 
@@ -262,7 +291,7 @@ FIPS.getTheList = function(){
 
 FIPS.populateTheList = function( response ){
 
-    console.log( 'populateTheList', response );
+    //console.log( 'populateTheList', response );
 
     const $tbody = $('div#fips-list-container tbody');
 
@@ -320,7 +349,7 @@ FIPS.populateTheList = function( response ){
 
 FIPS.populateTheEditor = function(response){
 
-    console.log('FIPS.populatedTheEditor', response);
+    //console.log('FIPS.populatedTheEditor', response);
 
     const x = response[0];
 
@@ -352,7 +381,7 @@ FIPS.populateTheEditor = function(response){
 
     if ( x.fips_match_type === 'Non_Exact' && x.fips_match_status !== FIPS.constants.MATCH_STATUS_CLOSED ){
 
-        $('input#fips_match_type')
+        $('select#fips_match_status')
             .after($('<input>', {
                 'type': 'button',
                 'value': 'accept as a match',
@@ -363,6 +392,7 @@ FIPS.populateTheEditor = function(response){
                 .on('click', function(){
 
                     $('select#fips_match_status').val(FIPS.constants.MATCH_STATUS_CLOSED).trigger('propertychange');
+                    $('input#fips_match_result').val(FIPS.constants.MATCH_RESULT_MATCHED).trigger('propertychange');
                     FIPS.saveEditorRecord(1);
                     //FIPS.closeEditor(0);
                 })
@@ -597,7 +627,7 @@ FIPS.restoreEditorRecord = function(){
 
 FIPS.restoreEditorRecordConfirmation = function(response){
 
-    console.log('restoreEditorRecordConfirmation: ', response);
+    //console.log('restoreEditorRecordConfirmation: ', response);
 
     const $tbodyEd = $('tbody#fips-editor-tbody');
 
@@ -609,7 +639,7 @@ FIPS.restoreEditorRecordConfirmation = function(response){
         FIPS.updateListFromEditor(true);
 
         // update the summary table
-        FIPS.getTheSummary();
+        FIPS.getTheSummaries();
 
         FIPS.loadRecordIntoEditor( record ); // re-load record 
     }
@@ -643,7 +673,7 @@ FIPS.saveEditorRecord = function( close_editor_on_success ){
         x[$(this).prop('id')] = $(this).val();
     });
 
-    console.log('saveEditorRecord', x);
+    //console.log('saveEditorRecord', x);
 
     YES3.ajax(
         'save-fips-record',
@@ -660,7 +690,7 @@ FIPS.saveEditorRecord = function( close_editor_on_success ){
 
 FIPS.saveEditorRecordConfirmation = function(response){
 
-    console.log('saveEditorRecordConfirmation: ', response);
+    //console.log('saveEditorRecordConfirmation: ', response);
 
     const $tbodyEd = $('tbody#fips-editor-tbody');
 
@@ -672,7 +702,7 @@ FIPS.saveEditorRecordConfirmation = function(response){
         FIPS.updateListFromEditor(true);
 
         // update the summary table
-        FIPS.getTheSummary();
+        FIPS.getTheSummaries();
 
         if ( response === "success-and-close" ) {
 
@@ -768,11 +798,11 @@ FIPS.updateAPIBatchConfirmation = function( response ){
 
     FIPS.postMessage( response );
 
-    FIPS.getTheSummary();
+    FIPS.getTheSummaries();
 
     FIPS.getTheList();
 
-    console.log('updateAPIBatchConfirmation', response);
+    //console.log('updateAPIBatchConfirmation', response);
 }
 
 FIPS.clearApiBatch = function(){
@@ -791,11 +821,11 @@ FIPS.clearApiBatchConfirmation = function( response ){
 
     FIPS.postMessage(response);
 
-    FIPS.getTheSummary();
+    FIPS.getTheSummaries();
 
     FIPS.getTheList();
 
-    console.log('clearApiBatchConfirmation', response);
+    //console.log('clearApiBatchConfirmation', response);
 }
 
 FIPS.callApiFromEditor = function(){
@@ -821,13 +851,15 @@ FIPS.callApiFromEditor = function(){
 
 FIPS.callApiFromEditorConfirmation = function(response){
 
-    console.log('callApiFromEditorConfirmation', response);
+    //console.log('callApiFromEditorConfirmation', response);
 
     const record = $('#fips-editor input#record').val();
 
     if ( record ){
 
         FIPS.loadRecordIntoEditor( record );
+
+        FIPS.getTheSummaries();
     }
 }
 
@@ -844,15 +876,15 @@ FIPS.callAPIBatch = function(){
 
 FIPS.callAPIConfirmation = function( response ){
 
-    console.log('callAPIConfirmation', response);
+    //console.log('callAPIConfirmation', response);
 
     FIPS.postMessage( response );
 
-    FIPS.getTheSummary();
+    FIPS.getTheSummaries();
 
     FIPS.getTheList();
 
-    console.log('callAPIConfirmation', response);
+    //console.log('callAPIConfirmation', response);
 }
 
 FIPS.setApiBatchSize = function(api_batch_size){
@@ -868,7 +900,7 @@ FIPS.setApiBatchSize = function(api_batch_size){
 
 FIPS.setApiBatchSizeConfirmation = function(response){
 
-    console.log('setApiBatchSizeConfirmation', response);
+    //console.log('setApiBatchSizeConfirmation', response);
 }
 
 FIPS.getApiBatchSize = function(){
@@ -904,7 +936,7 @@ FIPS.onResize = function(){
 
     //console.log('onResize', Hw, top);
 
-    $listContainer.height( (Hw - top - copyHeight - 80)+'px' );
+    $listContainer.height( (Hw - top - copyHeight - 40)+'px' );
 }
 
 FIPS.postMessage = function( msg, danger, forever ){
@@ -952,6 +984,119 @@ FIPS.injectActionIcons = function() {
     $('#fips-action-icons').empty().append($iconThemeDark).append($iconThemeLight);
 }
 
+FIPS.populateSessionTable = function(){
+
+    $('#session_user').html( YES3.userRights.username );
+    $('#session_project').html( YES3.Project.project_id + '&nbsp;' + YES3.Project.title );
+    $('#session_start').html( new Date().ymdhms() );
+}
+
+FIPS.displayReservationOptions = function(){
+
+    if ( YES3.EMSettings.allow_reservations==='no' ){
+
+        $('.when-no-reservations').hide();
+        $('.when-reservations').hide();
+    } 
+    else {
+
+        if ( parseInt($('td#reservation_n').html()) > 0 ) {
+
+            $('.when-no-reservations').hide();
+            $('.when-reservations').show();
+        } else {
+
+            $('.when-no-reservations').show();
+            $('.when-reservations').hide();
+        }
+    }
+}
+
+FIPS.reserveBlock = function() {
+
+    YES3.ajax(
+        'reserve-batch',
+        {
+            user: YES3.userRights.username
+        },
+        (function( response ){
+
+            //console.log( 'reserveBlock', response );
+
+            FIPS.postMessage(response);
+
+            FIPS.getTheSummaries();
+
+            FIPS.getTheList();
+        })
+    )
+}
+
+FIPS.releaseBlock = function() {
+
+    YES3.ajax(
+        'release-batch',
+        {
+            user: YES3.userRights.username
+        },
+        (function( response ){
+
+            //console.log( 'releaseBlock', response );
+
+            FIPS.postMessage(response);
+
+            FIPS.getTheSummaries();
+
+            FIPS.getTheList();
+        })
+    )
+}
+
+FIPS.startTimeoutCounter = function(){
+
+    const IDLETIMEOUT = 15; // minutes
+    var counter = IDLETIMEOUT;
+    var idleWarningPosted = false;
+
+    $(document).on('mousemove keypress', function(){
+
+        if ( idleWarningPosted ){
+
+            idleWarningPosted = false;
+            YES3.closePanel(YES3.panels.HELLO);
+        }
+
+        counter = IDLETIMEOUT;
+    });
+
+    var interval = setInterval(function() {
+
+        counter--;
+
+        if (counter == 2) {
+
+            YES3.hello(
+                "There are less than two minutes remaining before you will be logged out. Click any key or move the mouse to reset the idle timeout."
+            );
+
+            idleWarningPosted = true;
+        }
+
+        if (counter == 0) {
+
+            FIPS.appLogout();
+
+            // Clear the interval to stop the counter
+            clearInterval(interval);
+        }
+    }, 60000); // 60000 ms = 1 minute
+}
+
+FIPS.appLogout = function(){
+
+    window.location.href = YES3.REDCapURL + '?logout=1';
+}
+
 $(function(){
 
     FIPS.injectActionIcons();
@@ -966,10 +1111,14 @@ $(function(){
 
     FIPS.getApiBatchSize();
 
-    FIPS.getTheSummary();
+    FIPS.getTheSummaries();
 
     FIPS.getTheListFor('inprocess');
 
+    FIPS.populateSessionTable();
+
     $(window).trigger('resize');
+
+    FIPS.startTimeoutCounter();
 
 })

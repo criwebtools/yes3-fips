@@ -6,7 +6,6 @@ ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 
-
 require "autoload.php";
 
 use Exception;
@@ -17,6 +16,7 @@ use Yale\Yes3Fips\Yes3;
 use Yale\Yes3Fips\FIPS;
 use Yale\Yes3Fips\FIO;
 use Yale\Yes3Fips\FIOREDCap;
+use Yale\Yes3Fips\FIODatabase;
 
 class Yes3Fips extends \ExternalModules\AbstractExternalModule
 {
@@ -40,6 +40,12 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         [ "field_name"=>"fips_address_city",  "type"=>"text", "label"=>"City",   "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_address_state", "type"=>"text", "label"=>"State",  "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>25 ],
         [ "field_name"=>"fips_address_zip",   "type"=>"text", "label"=>"Zip",    "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>25 ],
+
+        [ "field_name"=>"fips_phone_home",   "type"=>"text", "label"=>"Home phone",    "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>40 ],
+        [ "field_name"=>"fips_phone_mobile",   "type"=>"text", "label"=>"Mobile phone",    "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>40 ],
+
+        [ "field_name"=>"fips_address_submitted", "type"=>"textarea", "label"=>"Address submitted for match", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
+        [ "field_name"=>"fips_address_matched", "type"=>"textarea", "label"=>"Matched address(es)", "editable"=>FIO::NEVER, "size"=>100 ],
     
         [ "field_name"=>"fips_comment",       "type"=>"textarea", "label"=>"comment",  "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>100 ],
 
@@ -54,13 +60,16 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         [ "field_name"=>"fips_match_result", "type"=>"text", "label"=>"Match result", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_match_type", "type"=>"text", "label"=>"Match type", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
 
-        [ "field_name"=>"fips_address_submitted", "type"=>"textarea", "label"=>"Address submitted for match", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>100 ],
-        [ "field_name"=>"fips_address_matched", "type"=>"textarea", "label"=>"Matched address(es)", "editable"=>FIO::NEVER, "size"=>100 ],
-
         [ "field_name"=>"fips_longitude", "type"=>"text", "label"=>"Longitude", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_latitude", "type"=>"text", "label"=>"Latitude", "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_tigerlineid", "type"=>"text", "label"=>"Tiger line id", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
         [ "field_name"=>"fips_tigerlineside", "type"=>"text", "label"=>"Tiger line side", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+
+        [ "field_name"=>"fips_match_user", "type"=>"text", "label"=>"Matched by", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_match_timestamp", "type"=>"text", "label"=>"Matched on", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+
+        [ "field_name"=>"fips_save_user", "type"=>"text", "label"=>"Edited by", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_save_timestamp", "type"=>"text", "label"=>"Edited on", "editable"=>FIO::NEVER, "display"=>FIO::ALWAYS, "size"=>50 ],
 
         [ "field_name"=>"fom_archive_timestamp", "type"=>"text", "label"=>"Archive timestamp", "editable"=>FIO::NEVER, "display"=>FIO::IF_SOURCE_DATABASE, "size"=>50 ],
         [ "field_name"=>"fom_archive", "type"=>"textarea", "label"=>"Archived record", "editable"=>FIO::NEVER, "display"=>FIO::IF_SOURCE_DATABASE, "size"=>100 ]
@@ -81,15 +90,15 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         if ( $this->getProjectId() ){
 
-            if ( $this->getProjectSetting('data-source')==="database" ){
-
-                //$this->initializeDBO();
-            }
-
             $this->settings['address_field_type'] = $this->getProjectSetting('address-field-type');
         }
     }
 
+    /**
+     * deprecated; replaced by singleton class FIODbConnection
+     * @return bool 
+     * @throws Exception 
+     */
     function initializeDBO()
     {
         if ( $this->getProjectSetting('data-source')!=="database" ){
@@ -192,17 +201,10 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         }
     }
 
-    private function saveAddressData( $xx ){
-
-        $rc = REDCap::saveData(
-            $this->getProjectId(),
-            'array',
-            $xx
-        );
-
-        print "<p>".print_r($rc, true)."</p>";
-    }
-
+    /**
+     * returns JSON-encoded properties for the instantiated class
+     * @return string|false 
+     */
     public function objectProperties()
     {
         $propKeys = [];
@@ -240,6 +242,13 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         
         return $json;
     }
+
+    /**
+     * Returns user permissions as array, including individual form permissions.
+     * Attempts to harmonize pre/post v12 permissions.
+     * @return array 
+     * @throws Exception 
+     */
 
     public function yes3UserRights()
     {
@@ -361,6 +370,15 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         ];
     }
 
+    /**
+     * Returns the full module URL ( http://redcap.internal/redcap_v13.7.2/modules/mymodule_v0.0.0/ )
+     * or relative to webroot ( /redcap_v13.7.2/modules/mymodule_v0.0.0/ )
+     * 
+     * @param bool $relative 
+     * @return string|false 
+     * @throws Exception 
+     */
+
     public function getModuleUrl($relative=false)
     {
         // returns a url ending in "/?xxxxxxxx"
@@ -374,6 +392,23 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         if ( $relative ) return substr($module_url, strlen(APP_PATH_WEBROOT_FULL)-1);
         else return $module_url;
+    }
+
+    public function getProjectProperties(){
+
+        return [
+            'project_id' => $this->getProject()->getProjectId(),
+            'title' => $this->getProject()->getTitle()
+        ];
+    }
+
+    public function getEMSettings(){
+
+        return [
+            'api_batch_size' => FIPS::getProjectSetting('api-batch-size', FIO::DEFAULT_API_BATCH_SIZE),
+            'reservation_block_size' => FIPS::getProjectSetting('reservation-block-size', FIO::DEFAULT_RESERVATION_BLOCK_SIZE),
+            'allow_reservations' => FIPS::getProjectSetting('allow-reservations', FIO::DEFAULT_ALLOW_RESERVATIONS),
+        ];
     }
 
     public function getCodeFor( string $libname, bool $includeHtml=false ):string
@@ -404,6 +439,12 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         //$js .= "\nYES3.REDCapUserRights = " . json_encode( $this->getUser()->getRights() ) . ";\n";
 
         $js .= "\nYES3.userRights = " . json_encode( $this->yes3UserRights() ) . ";\n";
+
+        $js .= "\nYES3.Project = " . json_encode( $this->getProjectProperties() ) . ";\n";
+
+        $js .= "\nYES3.EMSettings = " . json_encode( $this->getEMSettings() ) . ";\n";
+
+        $js .= "\nYES3.REDCapURL = '" . APP_PATH_WEBROOT_FULL	 . "';\n";
 
         // modify the JMO ajax method to dump response to console
 
@@ -445,7 +486,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
             $io = new FIODatabase();
         }
         
-        return $io->getFIPSrecords($params['filter'], $params['record']);
+        return $io->getFIPSrecords($params['filter'], $params['record'], $this->getUser()->getUserName());
     }
 
     private function saveFipsRecord( $params ){
@@ -518,7 +559,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
         }
         else return "EM config error";
 
-        return $io->getSummary();
+        return $io->getSummary( $this->getUser()->getUserName() );
     }
 
     private function getIoObject(){
@@ -1019,7 +1060,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
     public function getCopyRight(){
 
-        return REDCap::getCopyright() . "<br />Fabulous FIPS-O-Matic &copy; 2023 CRI Web Tools LLC";
+        return REDCap::getCopyright() . "<br />The Fabulous FIPS-O-Matic &copy; 2023 CRI Web Tools LLC";
     }
 
     public function testDb(){
@@ -1051,6 +1092,36 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
             $n++;
         }
         print "<p>dbRecordGenerator: " . $n. " row(s) returned. time: " . strval(hrtime(true)-$t) . " nanoseconds</p>";
+    }
+
+    private function reserveBatch( $params ){
+
+        $reservation_user = $this->getUser()->getUserName();
+
+        if ( $reservation_user !== $params['user'] ){
+
+            throw new Exception("Suspicious reservation user name: ".$params['user']);
+        }
+
+        $io = $this->getIoObject();
+
+        $reservation_block_size = FIPS::getProjectSetting('reservation-block-size', FIO::DEFAULT_RESERVATION_BLOCK_SIZE);
+
+        return $io->reserveBatch($reservation_user, $reservation_block_size);
+    }
+
+    private function releaseBatch( $params ){
+
+        $reservation_user = $this->getUser()->getUserName();
+
+        if ( $reservation_user !== $params['user'] ){
+
+            throw new Exception("Suspicious reservation user name: ".$params['user']);
+        }
+
+        $io = $this->getIoObject();
+
+        return $io->releaseBatch( $reservation_user );
     }
 
     /**
@@ -1145,6 +1216,17 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
             return $this->getCopyright();
         }
+
+        else if ($action==="reserve-batch") {
+
+            return $this->reserveBatch($payload);
+        }
+
+        else if ($action==="release-batch") {
+
+            return $this->releaseBatch($payload);
+        }
+
                         
         else return "No can do: the action '{$action}' is most abhorrent.";
     }

@@ -7,6 +7,7 @@ use REDCap;
 use ExternalModules\ExternalModules;
 use Yale\Yes3Fips\Yes3;
 use Yale\Yes3Fips\GeoRecord;
+use Yale\Yes3Fips\FIO;
 
 class FIPS {
 
@@ -92,6 +93,11 @@ class FIPS {
         }
 
         if ( $apiObject['addressMatches'] ) {
+
+            if ( $apiObject['addressMatches'][$addressMatchesIndex]['match_type']===FIO::MATCH_TYPE_EXACT ){
+
+                $geoRecord->put_fips_match_result( FIO::MATCH_RESULT_MATCHED ); // override 'tie' match result
+            }
             
             $geoRecord->put_fips_match_type( $apiObject['addressMatches'][$addressMatchesIndex]['match_type'] );
             $geoRecord->put_fips_address_matched( $matched_address_summary );
@@ -367,8 +373,12 @@ class FIPS {
         return ExternalModules::getProjectId();
     }
 
-    static function getProjectSetting($setting){
+    static function getProjectSetting($setting_name, $default=null){
 
-        return ExternalModules::getProjectSetting(self::MODULE_DIRECTORY_PREFIX, ExternalModules::getProjectId(), $setting);
+        $setting = ExternalModules::getProjectSetting(self::MODULE_DIRECTORY_PREFIX, ExternalModules::getProjectId(), $setting_name);
+
+        if ( !$setting && !is_null($default) ) $setting = $default;
+
+        return $setting;
     }
 }

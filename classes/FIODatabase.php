@@ -12,6 +12,104 @@ use Yale\Yes3Fips\FIODbConnection;
 
 class FIODatabase implements \Yale\Yes3Fips\FIO {
 
+    public function reserveBatch(string $user, int $batch_size): string {
+
+        $reservation_datetime = Yes3::isoTimeStampString();
+        $reservation_expiration = Yes3::addHoursToDatetime($reservation_datetime, 12);
+        $reservation_status = FIO::RESERVATION_RESERVED; // reserved
+
+        $reservation_selection_order = FIPS::getProjectSetting('reservation-selection-order', FIO::DEFAULT_RESERVATION_SELECTION);
+        $record_key_data_type = FIPS::getProjectSetting('record-key-data-type', FIO::DEFAULT_RECORD_KEY_DATA_TYPE);
+
+        $sql = "SELECT d.fips_linkage_id
+        FROM fom_addresses d
+        WHERE d.fips_match_status=? AND d.fips_linkage_id NOT IN (
+          SELECT fom_addresses.fips_linkage_id 
+          FROM fom_addresses 
+          INNER JOIN fom_reservations ON fom_reservations.fips_linkage_id=fom_addresses.fips_linkage_id
+          WHERE fom_reservations.reservation_status=?
+        )";
+
+        if ( $reservation_selection_order===FIO::RANDOM ) $sql .= " ORDER BY RAND()";
+        elseif ($record_key_data_type===FIO::RECORD_KEY_DATA_TYPE_NUMERIC) $sql .= " ORDER BY 0+d.`record`";
+        else $sql .= " ORDER BY d.`record`";
+
+        $sql .= " LIMIT ?";
+
+        $params = [FIO::MATCH_STATUS_IN_PROCESS, FIO::RESERVATION_RESERVED, $batch_size];
+
+        $xx = self::dbFetchRecords($sql, $params);
+
+        $reservations = array_column($xx, 'fips_linkage_id');
+
+        if ( !$reservations ) return "No reservations available.";
+
+        $iSql = "INSERT INTO fom_reservations (fips_linkage_id, reservation_datetime, reservation_expiration, reservation_user, reservation_status) VALUES";
+
+        $iParams = [];
+
+        $uSql = "UPDATE fom_reservations
+        SET reservation_status=?
+        WHERE reservation_status=? AND reservation_user=? AND fips_linkage_id IN(
+        SELECT fips_linkage_id
+        FROM fom_reservations
+        WHERE reservation_status=? AND reservation_user<>? AND fips_linkage_id IN(";
+
+        $uParams = [FIO::RESERVATION_RELEASED, FIO::RESERVATION_RESERVED, $user, FIO::RESERVATION_RESERVED, $user];
+
+        $delim = "";
+
+        /**
+         * prepare and run a bulk insert
+         */
+
+        foreach( $reservations as $fips_linkage_id ){
+
+            $iSql .= $delim . "(?,?,?,?,?)";
+
+            $uSql .= $delim ."?";
+
+            if ( !$delim ) $delim = ",";
+
+            array_push($iParams, $fips_linkage_id, $reservation_datetime, $reservation_expiration, $user, $reservation_status);
+            array_push($uParams, $fips_linkage_id);
+        }
+
+        $uSql .= "))";
+
+        /**
+         * execute the bulk insertion query
+         */
+
+        $rows_inserted = self::dbQuery($iSql, $iParams, FIO::QRY_RETURN_ROWS_AFFECTED);
+
+        /**
+         * JUST IN CASE
+         * If another user has somehow reserved any of this subset,
+         * release this user's reservation.
+         */
+
+        $rows_deleted = self::dbQuery($uSql, $uParams, FIO::QRY_RETURN_ROWS_AFFECTED);
+
+        return ($rows_inserted - $rows_deleted) . " reservation(s) made.";
+    }
+
+    public function releaseBatch(string $user): string {
+
+        $reservation_released = Yes3::isoTimeStampString();
+        $reservation_status = FIO::RESERVATION_RELEASED;
+
+        $sql = "UPDATE fom_reservations 
+        SET reservation_status=?, reservation_released=? 
+        WHERE reservation_status=? AND reservation_user=?";
+
+        $params = [FIO::RESERVATION_RELEASED, $reservation_released, FIO::RESERVATION_RESERVED, $user];
+
+        $rows = self::dbQuery($sql, $params, FIO::QRY_RETURN_ROWS_AFFECTED);
+
+        return $rows . " reservation(s) closed out.";
+    }
+
     public function getAddressForApiCall(string $record): array {
 
         $sql = "
@@ -173,11 +271,32 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         return "API call succeeded.<br>{$n} record(s) processed.<br>{$nMatchedExact} exact match(es).<br>{$nMatchedNonExact} fuzzy match(es).<br>{$nUnmatched} not matched.";
     }
 
-    public function getFIPSrecords(string $filter, string $record, int $limit=5000): array {
+    public function getFIPSrecords(string $filter, string $record, string $user): array {
+
+        /**
+         * everything changes if reservations made
+         */
+
+        $sqlR = "SELECT COUNT(*) AS K FROM fom_reservations WHERE reservation_status=? AND reservation_user=?";
+        $paramsR = [ self::RESERVATION_RESERVED, $user ];
+
+        $reservations = self::dbFetchValue($sqlR, $paramsR);
+
+        $list_order = FIPS::getProjectSetting("list-order", "random");
+
+        $record_key_data_type = FIPS::getProjectSetting('record-key-data-type', FIO::DEFAULT_RECORD_KEY_DATA_TYPE);
 
         if ( $record ){
 
-            $limit = 1;
+            $limit = "1";
+        }
+        else if ( $filter !== "record" ){
+
+            $limit = FIPS::getProjectSetting("list-limit", "2000");     
+        }
+        else {
+
+            return [];
         }
 
         $params = [];
@@ -185,6 +304,13 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         $sql = "SELECT fom_addresses.*, fom_crosswalk.record
         FROM fom_addresses
           INNER JOIN fom_crosswalk ON fom_addresses.fips_linkage_id=fom_crosswalk.fips_linkage_id";
+
+        if ( $reservations ){
+
+            $sql .= " INNER JOIN fom_reservations ON fom_reservations.fips_linkage_id = fom_addresses.fips_linkage_id AND fom_reservations.reservation_status=? AND fom_reservations.reservation_user=?";
+            $params[] = self::RESERVATION_RESERVED;
+            $params[] = $user;
+        }
 
         if ( $filter==="pending"){
 
@@ -276,10 +402,23 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             return [];
         }
 
-        Yes3::logDebugMessage(0, $sql, "getFIPSrecords:sql");
-        Yes3::logDebugMessage(0, print_r($params, true), "getFIPSrecords:params");
+        //Yes3::logDebugMessage(0, $sql, "getFIPSrecords:sql");
+        //Yes3::logDebugMessage(0, print_r($params, true), "getFIPSrecords:params");
 
         //return $sql;
+
+        if ( $list_order === "random" ){
+
+            $sql .= " ORDER BY RAND()";
+        }
+        elseif ($record_key_data_type===FIO::RECORD_KEY_DATA_TYPE_NUMERIC) {
+
+            $sql .= " ORDER BY 0+fom_crosswalk.`record`";
+        }
+        else {
+
+            $sql .= " ORDER BY fom_crosswalk.`record`";
+        }
 
         $sql .= " LIMIT ?";
 
@@ -293,7 +432,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         }
 
         // perform a 'natural sort' on the result
-        if ( count($xx)>1 ){
+        if ( count($xx)>1 && $list_order !== "random" ){
 
             usort( $xx, function($a, $b){ return strnatcmp($a['record'], $b['record']); });
         }
@@ -493,9 +632,9 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
     public function updateAPIbatch(): string {
 
-        $batchSize = FIPS::getProjectSetting('api-batch-size');
-
-        $batchOrder = FIPS::getProjectSetting('api-batch-order');
+        $batchSize = FIPS::getProjectSetting('api-batch-size', FIO::DEFAULT_API_BATCH_SIZE);
+        $batchOrder = FIPS::getProjectSetting('api-batch-order', FIO::DEFAULT_API_BATCH_ORDER);
+        $orderBy = ( $batchOrder==="random" ) ? "RAND()" : "d.`record`";
 
         $current = self::dbFetchValue("SELECT count(*) FROM fom_addresses WHERE `fips_match_status`=?", 
             [self::MATCH_STATUS_NEXT_API_BATCH]);
@@ -506,8 +645,6 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
             return "The batch quota is full. You may still manually assign records to the next batch.";
         }
-
-        $orderBy = ( FIPS::getProjectSetting('api-batch-order')==="random" ) ? "RAND()" : "d.`record`";
 
         $sql = "
         UPDATE fom_addresses a 
@@ -526,13 +663,12 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
 
         $rows_affected = self::dbQuery($sql, $params, self::QRY_RETURN_ROWS_AFFECTED);
 
-        return $rows_affected . " record(s) marked for inclusion in the next API batch.";
+        return $rows_affected . " record(s) newly marked for inclusion in the next API batch.";
     }
 
-    public function getSummary(): array {
+    public function getSummary( string $user="" ): array {
 
-        $sql = "
-        SELECT COUNT(*) as `summary_n`,
+        $sqlP = "SELECT COUNT(*) as `summary_n`,
             SUM(IF(IFNULL(`fips_match_status`, ?)=?, 1, 0)) AS `summary_pending`,
             SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_apibatch`,
             SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `summary_inprocess`,
@@ -544,7 +680,7 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
         FROM fom_addresses
         ";
 
-        $params = [ 
+        $paramsP = [ 
             FIO::MATCH_STATUS_PENDING,
             FIO::MATCH_STATUS_PENDING,
             FIO::MATCH_STATUS_NEXT_API_BATCH,
@@ -558,7 +694,32 @@ class FIODatabase implements \Yale\Yes3Fips\FIO {
             FIO::MATCH_RESULT_MATCHED
         ];
 
-        return self::dbFetchRecord($sql, $params);
+        $sqlR = "SELECT COUNT(*) as `reservation_n`,
+        SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `reservation_inprocess`,
+        SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `reservation_deferred`,
+        SUM(IF(IFNULL(`fips_match_status`, 0)=?, 1, 0)) AS `reservation_closed`,           
+        SUM(IF(IFNULL(`fips_match_status`, 0)=? AND IFNULL(`fips_match_result`, '')=?, 1, 0)) AS `reservation_closed_matched`,
+        SUM(IF(IFNULL(`fips_match_status`, 0)=? AND IFNULL(`fips_match_result`, '')<>?, 1, 0)) AS `reservation_closed_unmatched` 
+    FROM fom_addresses
+    INNER JOIN fom_reservations ON fom_reservations.fips_linkage_id=fom_addresses.fips_linkage_id
+    WHERE fom_reservations.reservation_status=? AND fom_reservations.reservation_user=?";
+
+        $paramsR = [ 
+            FIO::MATCH_STATUS_IN_PROCESS,
+            FIO::MATCH_STATUS_DEFERRED,
+            FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_RESULT_MATCHED,
+            FIO::MATCH_STATUS_CLOSED,
+            FIO::MATCH_RESULT_MATCHED,
+            FIO::RESERVATION_RESERVED,
+            $user
+        ];
+
+        return array_merge(
+            self::dbFetchRecord($sqlP, $paramsP),
+            self::dbFetchRecord($sqlR, $paramsR)
+        );
     }
  
     public static function dbQuery($sql, $params=[], $returnType=self::QRY_RETURN_RETCODE)

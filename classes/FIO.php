@@ -1,11 +1,11 @@
 <?php
 
 namespace Yale\Yes3Fips;
-
+/*
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
-
+*/
 interface FIO 
 {
     public const MATCH_STATUS_PENDING = '0';
@@ -15,15 +15,14 @@ interface FIO
     public const MATCH_STATUS_PO_BOX = '11';
     public const MATCH_STATUS_DEFERRED = '12';
 
-    public const DEFAULT_API_BATCH_SIZE = 50;
-
     public const NEVER = 0;
     public const IF_SINGLE_ADDRESS_FIELD = 1;
     public const IF_MULTIPLE_ADDRESS_FIELDS = 2;
     public const ALWAYS = 3;
     public const IF_SOURCE_DATABASE = 4;
     public const IF_SOURCE_REDCAP = 8;
-    
+
+    public const RANDOM = "random";
 
     public const MATCH_RESULT_MATCHED = 'Match';
     public const MATCH_RESULT_UNMATCHED = 'No_Match';
@@ -41,6 +40,23 @@ interface FIO
     public const QRY_RETURN_RETCODE = 3;
     public const QRY_RETURN_ROWS_AFFECTED = 4;
 
+    public const DEFAULT_LIST_LIMIT = 2000;
+    public const DEFAULT_LIST_ORDER = "random";
+
+    public const DEFAULT_API_BATCH_SIZE = 50;
+    public const DEFAULT_API_BATCH_ORDER = "random";
+
+    public const DEFAULT_RESERVATION_BLOCK_SIZE = 100;
+    public const DEFAULT_RESERVATION_SELECTION = "random";
+    public const RESERVATION_RESERVED = 1;
+    public const RESERVATION_RELEASED = 0;
+
+    public const RECORD_KEY_DATA_TYPE_NUMERIC = "numeric";
+    public const RECORD_KEY_DATA_TYPE_STRING = "string";
+    public const DEFAULT_RECORD_KEY_DATA_TYPE = "string";
+    
+    public const DEFAULT_ALLOW_RESERVATIONS = "no";
+    
     /**
      * benchmark:   Public_AR_ACS2022,  Public_AR_Current,  Public_AR_Census2020
      * vintage:     Current_ACS2022,    Current_Current,    Census2020_Census2020
@@ -65,7 +81,7 @@ interface FIO
 
     public function saveGeoData(array $geoData): string;
 
-    public function getFIPSrecords(string $filter, string $record, int $limit=5000): array;
+    public function getFIPSrecords(string $filter, string $record, string $user): array;
 
     public function assignLinkageIDs(): int;
 
@@ -81,7 +97,11 @@ interface FIO
 
     public function updateAPIbatch(): string;
 
-    public function getSummary(): array;
+    public function reserveBatch(string $user, int $batch_size): string;
+    
+    public function releaseBatch(string $user): string;
+
+    public function getSummary(string $user): array;
 }
 
 ?>

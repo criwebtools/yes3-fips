@@ -4,6 +4,8 @@ namespace Yale\Yes3Fips;
 
 use Exception;
 use REDCap;
+use DateTime;
+use DateInterval;
 use ExternalModules\ExternalModules;
 
 /*
@@ -347,10 +349,31 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
       return strftime("%y%m%d%H%M%S");
    }
 
-   public static function isoTimeStampString()
-   {
-      return strftime("%Y-%m-%d %H:%M:%S");
-   }
+    public static function isoTimeStampString(){
+        return strftime("%Y-%m-%d %H:%M:%S");
+    }
+
+    public static function addMinutesToDatetime(string $dtstring, int $m): string {
+
+        return self::addIntervalToDatetime($dtstring, 'PT'.strval($m).'M');
+    }
+
+    public static function addHoursToDatetime(string $dtstring, int $h): string {
+
+        return self::addIntervalToDatetime($dtstring, 'PT'.strval($h).'H');
+    }
+
+    public static function addDaysToDatetime(string $dtstring, int $d): string {
+
+        return self::addIntervalToDatetime($dtstring, 'P'.strval($d).'D');
+    }
+
+    public static function addIntervalToDatetime(string $dtstring, string $interval): string {
+
+        $datetime = (new DateTime($dtstring))->add(new DateInterval( $interval ));
+
+        return $datetime->format('Y-m-d H:i:s');
+    }
 
     public static function inoffensiveFieldName( $s )
     {

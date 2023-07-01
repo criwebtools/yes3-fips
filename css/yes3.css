@@ -12,6 +12,7 @@ html {
     --y3-min-line-height: 1.1;
 
     --y3-font-size-0750: calc( 0.750 * var(--y3-font-size) );
+    --y3-font-size-0800: calc( 0.800 * var(--y3-font-size) );
     --y3-font-size-0900: calc( 0.900 * var(--y3-font-size) );
     --y3-font-size-1000: var(--y3-font-size);
     --y3-font-size-1125: calc( 1.125 * var(--y3-font-size) );
@@ -393,7 +394,7 @@ html {
     
     --y3-positive   : var(--y3-green-9);
     --y3-negative   : var(--y3-deep-orange-14);
-    --y3-info       : var(--y3-light-blue-9);
+    --y3-info       : #5b9dc3;
     --y3-warning    : var(--y3-deep-orange);
     --y3-danger     : var(--y3-red-14);
     
@@ -469,6 +470,13 @@ html {
     src: url("[MODULE_URL]assets/Roboto-Black.ttf") format("truetype");
 }
 
+body {
+
+    color: var(--y3-primary);
+    font-size: 13px;
+    font-family: var(--y3-font-family-regular);
+}
+
 label {
 
     margin-bottom: 0 !important;
@@ -509,7 +517,7 @@ div#yes3-container {
     */   
     width: calc(100% - 20px);
     /*padding-right: 40px !important;*/
-    /*padding-top: 15px !important;*/
+    padding-top: 15px !important;
 }
 
 div#yes3-container div,
@@ -1449,6 +1457,16 @@ input::placeholder {
 
 .yes3-padding-top-1250 {
     padding-top: var(--y3-font-size-1250) !important;
+}
+
+.yes3-padding-left-lg {
+
+    padding-left: var(--y3-space-lg);
+}
+
+.yes3-padding-left-xl {
+
+    padding-left: var(--y3-space-xl);
 }
 
 .yes3-padding-left-0 {

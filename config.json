@@ -42,6 +42,15 @@
             ]
         },
         {
+            "key": "db-spec-file",
+            "name": "Database spec file (see README for structure and security guidance)",
+            "type": "text",
+            "branchingLogic": {
+                "field": "data-source",
+                "value": "database"
+            }
+        },
+        {
             "key": "fips-event",
             "name": "Event for FIPS form",
             "type": "event-list",
@@ -61,11 +70,11 @@
         },         
         {
             "key": "address-field-type",
-            "name": "Address is",
+            "name": "Address is a single field or separate street, city, state, zip fields",
             "type": "radio",
             "choices": [
-                {"value": "single", "name":"A single notes field"},
-                {"value": "multiple", "name":"Discrete fields for street, city, state, zip"}
+                {"value": "single", "name":"A single field"},
+                {"value": "multiple", "name":"Four separate fields"}
             ]
         },
         {
@@ -160,26 +169,63 @@
         },
         {
             "key": "api-batch-size",
-            "name": "batch size for API calls",
+            "name": "Batch size for API calls (10000 max)",
             "type": "text"
         },
         {
             "key": "api-batch-order",
-            "name": "batch assignment order",
+            "name": "Batch assignment order",
             "type": "radio",
             "choices": [
-                {"value": "random", "name":"random"},
-                {"value": "record", "name":"record id"}
+                {"value": "random", "name":"Random (default)"},
+                {"value": "record", "name":"Record id"}
             ]
         },
         {
-            "key": "db-spec-file",
-            "name": "Database spec file",
-            "type": "text",
-            "branchingLogic": {
-                "field": "data-source",
-                "value": "database"
-            }
+            "key": "list-order",
+            "name": "List order",
+            "type": "radio",
+            "choices": [
+                {"value": "random", "name":"Random (default)"},
+                {"value": "record", "name":"Record id"}
+            ]
+        },
+        {
+            "key": "list-limit",
+            "name": "List limit (default=2000 records)",
+            "type": "text"
+        },
+        {
+            "key": "record-key-data-type",
+            "name": "Record key data type (for sorting)",
+            "type": "radio",
+            "choices": [
+                {"value": "string", "name":"String (default)"},
+                {"value": "numeric", "name":"Numeric"}
+            ]
+        },
+        {
+            "key": "allow-reservations",
+            "name": "Allow reservations",
+            "type": "radio",
+            "choices": [
+                {"value": "no", "name":"No (default)"},
+                {"value": "yes", "name":"Yes"}
+            ]
+        },
+        {
+            "key": "reservation-block-size",
+            "name": "Reservation block size (default=100)",
+            "type": "text"
+        },
+        {
+            "key": "reservation-selection-order",
+            "name": "Reservation selection order",
+            "type": "radio",
+            "choices": [
+                {"value": "random", "name":"Random (default)"},
+                {"value": "sequential", "name":"Sequential"}
+            ]
         }
     ],
 
@@ -189,7 +235,7 @@
                 "name": "The Fabulous FIPS-O-Matic",
                 "icon": "fas fa-bomb",
                 "url":  "pages/fips_o_matic.php",
-                "show-header-and-footer": true
+                "show-header-and-footer": false
             }
         ]
     },
@@ -207,7 +253,11 @@
         "get-summary",
         "get-api-batch-size",
         "set-api-batch-size",
-        "get-copyright"
+        "get-copyright",
+        "reserve-batch",
+        "reserve-record",
+        "release-batch",
+        "release-record"
     ],
 
     "no-auth-pages": [

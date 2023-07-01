@@ -221,33 +221,64 @@ tbody#fips-editor-tbody input[type=text] {
     color: var(--y3-subtle) !important;
 }
 
+#fips-message{
+
+    color: var(--y3-warning);
+    font-weight: 400;
+}
+
+#yes3-controlbar {
+
+    font-weight: 400;
+    height: 2em;
+    line-height: 2em;
+}
+
 #fips-editor-message{
 
     color: var(--y3-warning);
     font-weight: 400;
 }
 
-table#fips-summary-table > tbody > tr > td:first-child {
+#fips-status-board table > thead > tr > th {
+
+    font-family: var(--y3-font-family-bold);
+    color: var(--y3-primary);
+    font-size: var(--y3-font-size-1500);
+    line-height: calc( 1.15 * var(--y3-font-size-1500) );
+}
+
+#fips-status-board table > thead > tr > th > a {
+
+    color: var(--y3-subtle) !important;
+    font-family: var(--y3-font-family-regular) !important;
+    font-size: var(--y3-font-size-0900) !important;
+}
+
+#fips-status-board table > tbody > tr > td {
+
+    font-size: var(--y3-font-size-0900);
+    line-height: calc( 1.15 * var(--y3-font-size-0900) );
+}
+
+#fips-status-board table > tbody > tr > td:first-child {
 
     float: left;
     color: var(--y3-primary);
     font-weight: normal;
 }
 
-table#fips-summary-table > tbody > tr > td:nth-child(2) {
+#fips-status-board table > tbody > tr > td:nth-child(2) {
 
     float: right;
-    color: var(--y3-primary);
+    color: var(--y3-secondary);
     font-weight: normal;
+    padding-left: var(--y3-space-sm);
 }
 
-table#fips-summary-table > tbody > tr > td:nth-child(3) {
+#fips-status-board table > tbody > tr > td:nth-child(3) {
 
     color: var(--y3-subtle);
     font-weight: normal;
-}
-
-table#fips-summary-table th {
-
-    padding-bottom: 15px !important;
+    padding-left: var(--y3-space-sm);
 }

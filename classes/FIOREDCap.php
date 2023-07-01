@@ -10,6 +10,20 @@ use Yale\Yes3Fips\FIPS;
 
 class FIOREDCap implements \Yale\Yes3Fips\FIO {
 
+    public function reserveBatch(string $user, int $batch_size): string {
+    
+        $reservation_datetime = Yes3::isoTimeStampString();
+        $reservation_expiration = Yes3::addHoursToDatetime($reservation_datetime, 12);
+        $reservation_status = 1; // reserved
+
+        return "";
+    }
+
+    public function releaseBatch(string $user): string {
+
+        return "";
+    }
+
     public function getAddressForApiCall(string $record): array {
 
         $address = [];
@@ -166,7 +180,7 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
         }
     }
 
-    public function getFIPSrecords(string $filter, string $record, int $limit=5000): array {
+    public function getFIPSrecords(string $filter, string $record="", string $user=""): array {
 /*
         $filter = $data['filter'];
 
@@ -176,9 +190,19 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
 
         $event_id = FIPS::getProjectSetting('fips-event');
 
+        $list_order = FIPS::getProjectSetting("list-order", "random");
+
         if ( $record ){
 
-            $limit = 1;
+            $limit = "1";
+        }
+        else if ( $filter !== "record" ){
+
+            $limit = FIPS::getProjectSetting("list-limit", "2000");     
+        }
+        else {
+
+            return [];
         }
 
         $sql = "
@@ -332,6 +356,11 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             return [];
         }
 
+        if ( $list_order === "random" ){
+
+            $sql .= " ORDER BY RAND()";
+        }
+
         $sql .= " LIMIT ?";
 
         $params[] = $limit;
@@ -339,7 +368,10 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         $xx =  Yes3::fetchRecords( $sql, $params );
 
         // perform a 'natural sort' on the result
-        usort( $xx, function($a, $b){ return strnatcmp($a['record'], $b['record']); });
+        if ( count($xx)>1 && $list_order !== "random" ){
+
+            usort( $xx, function($a, $b){ return strnatcmp($a['record'], $b['record']); });
+        }
 
         return $xx;
     }
@@ -514,8 +546,10 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
         $event_id = FIPS::getProjectSetting('fips-event');
 
-        $batchSize = FIPS::getProjectSetting('api-batch-size');
-
+        $batchSize = FIPS::getProjectSetting('api-batch-size', FIO::DEFAULT_API_BATCH_SIZE);
+        $batchOrder = FIPS::getProjectSetting('api-batch-order', FIO::DEFAULT_API_BATCH_ORDER);
+        $orderBy = ( $batchOrder==="random" ) ? "RAND()" : "d.`record`";
+        
         $current = Yes3::fetchValue("SELECT count(*) FROM redcap_data WHERE project_id=? AND `event_id`=? AND field_name='fips_match_status' AND `value`=?", 
             [$project_id, $event_id, FIO::MATCH_STATUS_NEXT_API_BATCH]);
 
@@ -532,7 +566,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
             LEFT JOIN redcap_data f1 ON f1.project_id=d.project_id AND f1.event_id=d.event_id AND f1.`record`=d.`record`AND f1.field_name='fips_match_status'
         WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=? AND d.`value` IS NOT NULL
         AND IFNULL(f1.`value`, 0) < ?
-        ORDER BY `record`
+        ORDER BY {$orderBy} 
         LIMIT ?
         ";
 
@@ -552,7 +586,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         );
 
         //return "batch size: {$batchSize}, current: {$current}, remaining: {$remaining}.";
-        return $rc['item_count'] . " record(s) marked for inclusion in the next API batch.";
+        return $rc['item_count'] . " record(s) newly marked for inclusion in the next API batch.";
         //return print_r($rc, true);
     }
 
@@ -714,7 +748,7 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
         ;
     }
 
-    public function getSummary(): array {
+    public function getSummary(string $user): array {
 
         $event_id = FIPS::getProjectSetting('fips-event');
 

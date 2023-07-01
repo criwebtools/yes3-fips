@@ -682,12 +682,14 @@ YES3.ajax = ( action, parms, callBackFn )=>{
 
         console.error('YES3 AJAX ERROR REPORT', err);
 
-        /**
-         * if this is the hacked version, log the response
-         */
-        if ( typeof err === 'object' && typeof err.responsetext === 'string' ){
+        alert("AJAX Error reported. Reload to recover.");
 
-            YES3.moduleObject.log(err.responsetext, {'log_type':'AJAX RESPONSE TEXT'});
+        /**
+         * if this is the new version, log the response
+         */
+        if ( typeof err === 'object' && typeof err.response === 'string' ){
+
+            YES3.moduleObject.log(err.response, {'log_type':'AJAX RESPONSE TEXT'});
         }
     });
 }
