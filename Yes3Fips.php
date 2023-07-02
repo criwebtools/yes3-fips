@@ -38,8 +38,8 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
 
         [ "field_name"=>"fips_address_street","type"=>"textarea", "label"=>"Street", "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
         [ "field_name"=>"fips_address_city",  "type"=>"text", "label"=>"City",   "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>100 ],
-        [ "field_name"=>"fips_address_state", "type"=>"text", "label"=>"State",  "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>25 ],
-        [ "field_name"=>"fips_address_zip",   "type"=>"text", "label"=>"Zip",    "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>25 ],
+        [ "field_name"=>"fips_address_state", "type"=>"text", "label"=>"State",  "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>50 ],
+        [ "field_name"=>"fips_address_zip",   "type"=>"text", "label"=>"Zip",    "editable"=>FIO::IF_MULTIPLE_ADDRESS_FIELDS, "display"=>FIO::ALWAYS, "size"=>50 ],
 
         [ "field_name"=>"fips_phone_home",   "type"=>"text", "label"=>"Home phone",    "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>40 ],
         [ "field_name"=>"fips_phone_mobile",   "type"=>"text", "label"=>"Mobile phone",    "editable"=>FIO::ALWAYS, "display"=>FIO::ALWAYS, "size"=>40 ],

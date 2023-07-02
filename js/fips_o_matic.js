@@ -235,16 +235,16 @@ FIPS.populateTheSummaries = function(response){
     $('td#reservation_closed_unmatched').html(response.reservation_closed_unmatched);
     $('td#reservation_closed_unmatched_pct').html( FIPS.percentOf(response.reservation_closed_unmatched, response.reservation_closed, 'total') );
 
-    FIPS.showOrHideApiElements( response.summary_apibatch );
+    FIPS.showOrHideApiElements( response.summary_apibatch, response.summary_pending );
 
     FIPS.displayReservationOptions();
 
     //console.log('populateTheSummaries', response);
 }
 
-FIPS.showOrHideApiElements = function( n ){
+FIPS.showOrHideApiElements = function( nApiBatch, nPending ){
 
-    if ( parseInt(n) > 0 ){
+    if ( parseInt(nApiBatch) > 0 ){
 
         $('.fips-api-batch').show();
         $('.fips-no-api-batch').hide();
@@ -253,6 +253,15 @@ FIPS.showOrHideApiElements = function( n ){
 
         $('.fips-api-batch').hide();
         $('.fips-no-api-batch').show();
+    }
+
+    if ( parseInt(nPending) > 0 ){
+
+        $('.fips-when-pending').show();
+    }
+    else {
+
+        $('.fips-when-pending').hide();
     }
 }
 
@@ -1054,7 +1063,7 @@ FIPS.releaseBlock = function() {
 
 FIPS.startTimeoutCounter = function(){
 
-    const IDLETIMEOUT = 15; // minutes
+    const IDLETIMEOUT = 30; // minutes
     var counter = IDLETIMEOUT;
     var idleWarningPosted = false;
 
