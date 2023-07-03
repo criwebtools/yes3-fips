@@ -72,6 +72,33 @@ div#fips-editor-container {
     /* display: none; */
 }
 
+.fips-scrolling-content-container {
+
+    scrollbar-color: var(--y3-separator-color) transparent;
+    scrollbar-width: 10px;
+}
+
+.fips-scrolling-content-container::-webkit-scrollbar-track
+{
+    /*box-shadow: inset 0 0 5px rgba(0,0,0,0.3);*/
+    /*border-radius: 2px;*/
+    background-color: transparent;
+}
+
+.fips-scrolling-content-container::-webkit-scrollbar
+{
+    width: 10px;
+    background-color: transparent;
+}
+
+.fips-scrolling-content-container::-webkit-scrollbar-thumb
+{
+    /*border-radius: 2px;*/
+    /*box-shadow: inset 0 0 5px rgba(0,0,0,.3);*/
+    background-color: var(--y3-separator-color);
+}
+
+
 div#fips-list-container {
 
     width: 100%;
@@ -85,7 +112,7 @@ div#fips-list-container {
 
 div#fips-list-container .tableFixHead {
     overflow-y: auto; /* make the table scrollable if height is more than 200 px  */
-    height: 200px; /* gives an initial height of 200px to the table */
+    height: 1rem; /* gives an initial height to the table */
 }
 
 div#fips-list-container .tableFixHead thead th {
@@ -250,7 +277,7 @@ tbody#fips-editor-tbody input[type=text] {
 
 #fips-status-board table > thead > tr > th > a {
 
-    color: var(--y3-subtle) !important;
+    color: var(--y3-secondary) !important;
     font-family: var(--y3-font-family-regular) !important;
     font-size: var(--y3-font-size-0900) !important;
 }

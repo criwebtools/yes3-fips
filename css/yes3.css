@@ -1017,10 +1017,10 @@ td:has(> input:disabled)::after {
     display: none;
     color: var(--y3-primary);
     background-color: var(--y3-page-color);
-    padding-left: var(--y3-space-md);
+    padding-left: var(--y3-space-lg);
     padding-right: var(--y3-space-md);
-    padding-top: var(--y3-space-sm);
-    padding-bottom: var(--y3-space-sm);
+    padding-top: 0;
+    padding-bottom: var(--y3-space-lg);
     font-size: var(--y3-font-size);
     /*border: 1px solid black;*/
     width: 100%;
@@ -1091,7 +1091,7 @@ td:has(> input:disabled)::after {
 }
 
 .yes3-panel-message {
-    color: var(--y3-info);
+    color: var(--y3-primary);
 }
 
 div.yes3-panel-row-left {

@@ -1063,7 +1063,7 @@ FIPS.releaseBlock = function() {
 
 FIPS.startTimeoutCounter = function(){
 
-    const IDLETIMEOUT = 30; // minutes
+    const IDLETIMEOUT = parseInt(YES3.EMSettings.idle_timeout); // minutes
     var counter = IDLETIMEOUT;
     var idleWarningPosted = false;
 
@@ -1085,7 +1085,7 @@ FIPS.startTimeoutCounter = function(){
         if (counter == 2) {
 
             YES3.hello(
-                "There are less than two minutes remaining before you will be logged out. Click any key or move the mouse to reset the idle timeout."
+                "There are less than two minutes remaining before you will be logged out. Click or move the mouse to reset the idle timeout."
             );
 
             idleWarningPosted = true;

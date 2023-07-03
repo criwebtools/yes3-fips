@@ -57,6 +57,8 @@ interface FIO
     
     public const DEFAULT_ALLOW_RESERVATIONS = "no";
     
+    public const DEFAULT_IDLE_TIMEOUT = 15;
+    
     /**
      * benchmark:   Public_AR_ACS2022,  Public_AR_Current,  Public_AR_Census2020
      * vintage:     Current_ACS2022,    Current_Current,    Census2020_Census2020

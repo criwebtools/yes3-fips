@@ -67,6 +67,7 @@ if ( FIPS::getProjectSetting('data-source')==="database" ){
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="<?= $module->getUrl('favicon.ico')?>">
 
 </head>
 <body>
@@ -150,7 +151,7 @@ if ( FIPS::getProjectSetting('data-source')==="database" ){
             </div>
 
             <!-- table -->
-            <div id='fips-list-container'>
+            <div id='fips-list-container' class='fips-scrolling-content-container'>
                 <table class='tableFixHead'>
                     <thead>
                         <th class='fips-record'>record</th>
@@ -217,7 +218,7 @@ if ( FIPS::getProjectSetting('data-source')==="database" ){
             <div class="yes3-flex-container-left-aligned  yes3-headroom">
 
                 <input type='button' value='get started: make your reservations' class='when-no-reservations' title='Reserve a block of reservations.' onclick='FIPS.reserveBlock()' />
-                <input type='button' value='finish up: close out your reservations' class='when-reservations fips-warningbutton' title='Cancel your reservations (do this when finished for the day).' onclick='FIPS.releaseBlock()' />
+                <input type='button' value='finish up: cancel your reservations' class='when-reservations fips-warningbutton' title='Cancel your reservations (do this when finished for the day).' onclick='FIPS.releaseBlock()' />
             </div>
 
 

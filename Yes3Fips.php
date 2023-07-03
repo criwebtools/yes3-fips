@@ -408,6 +408,7 @@ class Yes3Fips extends \ExternalModules\AbstractExternalModule
             'api_batch_size' => FIPS::getProjectSetting('api-batch-size', FIO::DEFAULT_API_BATCH_SIZE),
             'reservation_block_size' => FIPS::getProjectSetting('reservation-block-size', FIO::DEFAULT_RESERVATION_BLOCK_SIZE),
             'allow_reservations' => FIPS::getProjectSetting('allow-reservations', FIO::DEFAULT_ALLOW_RESERVATIONS),
+            'idle_timeout' => FIPS::getProjectSetting('idle-timeout', FIO::DEFAULT_IDLE_TIMEOUT)
         ];
     }
 

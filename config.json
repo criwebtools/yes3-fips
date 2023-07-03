@@ -216,7 +216,11 @@
         {
             "key": "reservation-block-size",
             "name": "Reservation block size (default=100)",
-            "type": "text"
+            "type": "text",
+            "branchingLogic": {                   
+                "field": "allow-reservations",
+                "value": "yes"                   
+            }
         },
         {
             "key": "reservation-selection-order",
@@ -225,7 +229,16 @@
             "choices": [
                 {"value": "random", "name":"Random (default)"},
                 {"value": "sequential", "name":"Sequential"}
-            ]
+            ],
+            "branchingLogic": {                   
+                "field": "allow-reservations",
+                "value": "yes"                   
+            }
+        },
+        {
+            "key": "idle-timeout",
+            "name": "Idle timeout in minutes (default=15)",
+            "type": "text"
         }
     ],
 
