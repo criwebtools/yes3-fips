@@ -255,7 +255,7 @@ FIPS.showOrHideApiElements = function( nApiBatch, nPending ){
         $('.fips-no-api-batch').show();
     }
 
-    if ( parseInt(nPending) > 0 ){
+    if ( parseInt(nPending) > 0 || parseInt(nApiBatch) > 0){
 
         $('.fips-when-pending').show();
     }
