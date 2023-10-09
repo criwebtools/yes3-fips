@@ -425,18 +425,6 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
        return preg_replace("/[^a-z0-9_]+/", "", strtolower(str_replace([' ', '-', '.'], '_', $s)));
     }
 
-    /**
-     * Converts every ASCII/UTF-8 quotation mark-like character to straight quote (including html entities)
-     * 
-     * adapted from:
-     * https://stackoverflow.com/questions/20025030/convert-all-types-of-smart-quotes-with-php
-     * 
-     * function: straightQuoter
-     * 
-     * @param $s
-     * 
-     * @return string
-     */
     public static function straightQuoter( $s )
     {  
 
@@ -530,15 +518,6 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
         return $s;       
     }
 
-    /**
-     * Allows ASCII alphanumerics
-     * 
-     * function: alphaNumericString
-     * 
-     * @param $s
-     * 
-     * @return string
-     */
     public static function alphaNumericString( $s )
     {
         if ( is_null($s) ){
