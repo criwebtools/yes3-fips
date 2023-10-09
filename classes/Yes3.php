@@ -476,25 +476,7 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
         return str_replace($qSearch, "'", $s);
     }
 
-    /**
-     * Tries to guarantee inoffensive text, suitable for labels or SAS text fields
-     * Should be UTF-8 compatible
-     * 
-     * - trimmed
-     * - stripped of HTML tags
-     * - control chars (0-31, 127) converted to spaces
-     * - all flavors of quotes converted to straight quote (apostrophe)
-     * 
-     * regexp from: https://stackoverflow.com/questions/1176904/how-to-remove-all-non-printable-characters-in-a-string
-     * 
-     * function: inoffensiveText
-     * 
-     * @param $s
-     * @param int $maxLen
-     * 
-     * @return string
-     */
-    public static function inoffensiveText( $s, $maxLen=0, $convertNewLineToComma=false ):string
+    public static function inoffensiveText( $s, $maxLen=0, $convertNewLineToComma=false )
     {
         if ( is_null($s) ){
 
