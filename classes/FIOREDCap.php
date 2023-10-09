@@ -159,7 +159,7 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
             }
         }
 
-        Yes3::logDebugMessage(0, "_SESSION[foo]=".$_SESSION['foo'], "saveGeoData");
+        //Yes3::logDebugMessage(0, "_SESSION[foo]=".$_SESSION['foo'], "saveGeoData");
 
         $rc = REDCap::saveData(
             $project_id,
@@ -170,7 +170,8 @@ class FIOREDCap implements \Yale\Yes3Fips\FIO {
 
         if ( $rc['errors'] ){
 
-            return "REDCap reports the following error(s): " . implode(";", $rc['errors'] );
+            //return "REDCap reports the following error(s): " . implode(";", $rc['errors'] );
+            return "REDCap reports the following error(s): " . print_r($rc['errors'], true );
         }
         else {
             return "API call succeeded.<br>{$n} record(s) processed.<br>{$nMatchedExact} exact match(es).<br>{$nMatchedNonExact} fuzzy match(es).<br>{$nUnmatched} not matched.";
@@ -493,7 +494,8 @@ WHERE d.project_id=? AND d.field_name='fips_address_timestamp' AND d.`event_id`=
 
         if ( $rc['errors'] ){
 
-            return "REDCap reports the following error(s): " . implode(";", $rc['errors'] );
+            //return "REDCap reports the following error(s): " . implode(";", $rc['errors'] );
+            return "saveFIPSrecord: REDCap reports the following error(s): " . print_r($rc['errors'], true );
         }
         else {
 

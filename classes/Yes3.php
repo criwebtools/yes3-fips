@@ -643,7 +643,7 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
     * once parameterized queries are fully implemented.
     *
     */
-
+/*
     public static function sql_string($x)
     {
         if (is_null($x)) {
@@ -696,7 +696,8 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
    {
       return "'" . strftime("%F %T") . "'";
    }
-   
+   */
+  
    /*
    * LOGGING DEBUG INFO
    * Call this function to log messages intended for debugging, for example an SQL statement.

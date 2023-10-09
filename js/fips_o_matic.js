@@ -673,7 +673,7 @@ FIPS.saveEditorRecord = function( close_editor_on_success ){
     const record = $tbody.find('input#record').val();
     const fips_linkage_id = $tbody.find('input#fips_linkage_id').val();
 
-    FIPS.postEditorMessage("WAIT");
+    FIPS.postEditorMessage("PLEASE WAIT");
 
     x = {};
 
@@ -682,7 +682,7 @@ FIPS.saveEditorRecord = function( close_editor_on_success ){
         x[$(this).prop('id')] = $(this).val();
     });
 
-    //console.log('saveEditorRecord', x);
+    console.log('saveEditorRecord', x);
 
     YES3.ajax(
         'save-fips-record',
@@ -699,7 +699,7 @@ FIPS.saveEditorRecord = function( close_editor_on_success ){
 
 FIPS.saveEditorRecordConfirmation = function(response){
 
-    //console.log('saveEditorRecordConfirmation: ', response);
+    console.log('saveEditorRecordConfirmation: ', response);
 
     const $tbodyEd = $('tbody#fips-editor-tbody');
 
@@ -860,7 +860,9 @@ FIPS.callApiFromEditor = function(){
 
 FIPS.callApiFromEditorConfirmation = function(response){
 
-    //console.log('callApiFromEditorConfirmation', response);
+    console.log('callApiFromEditorConfirmation:', response);
+
+    FIPS.postMessage( response );
 
     const record = $('#fips-editor input#record').val();
 
@@ -870,6 +872,7 @@ FIPS.callApiFromEditorConfirmation = function(response){
 
         FIPS.getTheSummaries();
     }
+
 }
 
 FIPS.callAPIBatch = function(){
