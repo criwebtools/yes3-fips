@@ -437,7 +437,7 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
      * 
      * @return string
      */
-    public static function straightQuoter( $s ):string
+    public static function straightQuoter( $s )
     {  
 
         if ( is_null($s) ){
@@ -539,7 +539,7 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
      * 
      * @return string
      */
-    public static function alphaNumericString( $s ):string
+    public static function alphaNumericString( $s )
     {
         if ( is_null($s) ){
 
@@ -697,7 +697,7 @@ WHERE `project_id`=? AND `event_id`=? AND `record`=? AND `field_name`=? AND ifnu
       return "'" . strftime("%F %T") . "'";
    }
    */
-  
+
    /*
    * LOGGING DEBUG INFO
    * Call this function to log messages intended for debugging, for example an SQL statement.
