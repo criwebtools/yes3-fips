@@ -21,12 +21,14 @@
         <UndefinedConstant errorLevel="info" />
 
         <UnusedVariable errorLevel="info" />
-
+        
+        <!--
         <UndefinedFunction>
             <errorLevel type="suppress">
                 <referencedFunction name="Yale\Yes3Fips\db_real_escape_string" />
             </errorLevel>
         </UndefinedFunction>
+        -->
         
         <UndefinedMethod>
             <errorLevel type="suppress">
